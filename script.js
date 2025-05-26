@@ -788,33 +788,61 @@ async function processAIImport() {
         return;
     }
     
-    // Show loading state
+    // Get elements with better error handling
     const importBtn = document.querySelector('.ai-import-btn');
     const spinner = document.querySelector('.ai-spinner');
-    const originalText = importBtn.querySelector('span').textContent;
+    const btnText = importBtn ? importBtn.querySelector('span') : null;
+    const modal = document.getElementById('aiImportModal');
     
-    importBtn.disabled = true;
-    importBtn.querySelector('span').textContent = 'Processing with AI...';
-    spinner.style.display = 'inline-block';
+    if (!importBtn) {
+        console.error('Import button not found');
+        showNotification('Interface error. Please try again.', 'error');
+        return;
+    }
+    
+    // Store original text safely
+    const originalText = btnText ? btnText.textContent : 'Import with AI';
     
     try {
+        // Show enhanced loading state
+        importBtn.disabled = true;
+        if (btnText) btnText.textContent = 'Processing with AI...';
+        if (spinner) spinner.style.display = 'inline-block';
+        if (modal) modal.classList.add('processing');
+        
+        // Show loading notification
+        showNotification('🤖 AI is analyzing your checklist...', 'info');
+        
         // Parse with AI
         const parsedData = await parseChecklistWithAI(checklistText);
         
         if (parsedData) {
+            showNotification('✅ Successfully parsed checklist!', 'success');
             // Update the application
             await updateWithAIParsedData(parsedData);
             hideAIImportModal();
+            showNotification('📋 Checklist imported and ready to use!', 'success');
+        } else {
+            showNotification('❌ Failed to parse checklist. Please try again.', 'error');
         }
         
     } catch (error) {
         console.error('Import error:', error);
         showNotification('Failed to import checklist. Please try again.', 'error');
     } finally {
-        // Reset button state
-        importBtn.disabled = false;
-        importBtn.querySelector('span').textContent = originalText;
-        spinner.style.display = 'none';
+        // Reset button state safely
+        if (importBtn) {
+            importBtn.disabled = false;
+        }
+        if (btnText) {
+            btnText.textContent = originalText;
+        }
+        if (spinner) {
+            spinner.style.display = 'none';
+        }
+        if (modal) {
+            modal.classList.remove('processing');
+        }
     }
 }
 
