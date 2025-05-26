@@ -576,23 +576,30 @@ function getApiKey() {
 async function parseChecklistWithAI(rawText) {
     try {
         console.log('🤖 Starting AI parsing with Kluster AI...');
-        
-        const prompt = `You are a JSON converter. Convert this checklist to JSON format. Return ONLY the JSON object, no other text.
+          const prompt = `You are a JSON converter. Convert this email campaign checklist to JSON format. Return ONLY the JSON object, no explanations.
 
-Structure:
+Required JSON structure:
 {
   "sections": [
     {
       "id": 1,
       "title": "Section Name",
-      "cathieStatus": "Status or 'Status not specified'",
-      "malaurieStatus": "Status or 'Status not specified'",
-      "actions": ["action1", "action2"]
+      "cathieStatus": "Status found or 'Status not specified'",
+      "malaurieStatus": "Status found or 'Status not specified'",
+      "actions": ["Action item 1", "Action item 2"]
     }
   ]
 }
 
-Convert this text:
+PARSING RULES:
+1. Extract numbered sections (e.g., "1. Newsletter Confirmation / Newsletter Subscription")
+2. Look for "Status:" blocks with Cathie/Malaurie information
+3. Extract all action items from "Actions Required:" sections
+4. Remove bullet points (-, •, ▪) from action text
+5. Preserve status details like "GO", "NO-GO", reasoning in parentheses
+6. Each section should have multiple actionable items
+
+Convert this checklist:
 ${rawText}`;
 
         const requestBody = {
@@ -753,18 +760,17 @@ function createFallbackStructure(rawText) {
     const sections = [];
     let currentSection = null;
     let sectionId = 1;
+    let collectingActions = false;
+    let collectingStatus = false;
     
     for (const line of lines) {
         const trimmed = line.trim();
         
         if (!trimmed) continue;
         
-        // Section headers (lines without bullets or status keywords)
-        if (!trimmed.startsWith('-') && 
-            !trimmed.toLowerCase().includes('cathie') && 
-            !trimmed.toLowerCase().includes('malaurie') &&
-            trimmed.length > 3) {
-            
+        // Section headers (numbered with dots: "1. Title", "2. Title", etc.)
+        const sectionMatch = trimmed.match(/^(\d+)\.\s*(.+)$/);
+        if (sectionMatch) {
             // Save previous section
             if (currentSection) {
                 sections.push(currentSection);
@@ -772,36 +778,72 @@ function createFallbackStructure(rawText) {
             
             // Create new section
             currentSection = {
-                id: sectionId++,
-                title: trimmed,
+                id: parseInt(sectionMatch[1]),
+                title: sectionMatch[2],
                 cathieStatus: "Status not specified",
                 malaurieStatus: "Status not specified",
                 actions: []
             };
-        } 
-        // Status lines
-        else if (trimmed.toLowerCase().includes('cathie')) {
-            if (currentSection) {
-                currentSection.cathieStatus = trimmed.replace(/^-\s*/, '');
-            }
-        } 
-        else if (trimmed.toLowerCase().includes('malaurie')) {
-            if (currentSection) {
-                currentSection.malaurieStatus = trimmed.replace(/^-\s*/, '');
-            }
+            collectingActions = false;
+            collectingStatus = false;
+            continue;
         }
-        // Action items
-        else if (trimmed.startsWith('-') || trimmed.match(/^\d+\./)) {
-            if (currentSection) {
-                const actionText = trimmed.replace(/^[-\d.]\s*/, '');
-                if (actionText && !actionText.toLowerCase().includes('status')) {
-                    currentSection.actions.push(actionText);
-                }
-            }
+        
+        // Status section detection
+        if (trimmed.toLowerCase() === 'status:') {
+            collectingStatus = true;
+            collectingActions = false;
+            continue;
         }
-        // Other potential actions
-        else if (currentSection && trimmed.length > 5) {
-            currentSection.actions.push(trimmed);
+        
+        // Actions section detection
+        if (trimmed.toLowerCase().includes('actions required:')) {
+            collectingActions = true;
+            collectingStatus = false;
+            continue;
+        }
+        
+        // Parse status lines when in status section
+        if (collectingStatus && currentSection) {
+            if (trimmed.toLowerCase().startsWith('cathie:')) {
+                currentSection.cathieStatus = trimmed.substring(7).trim();
+            } else if (trimmed.toLowerCase().startsWith('malaurie:')) {
+                currentSection.malaurieStatus = trimmed.substring(9).trim();
+            }
+            continue;
+        }
+        
+        // Parse action items when in actions section
+        if (collectingActions && currentSection) {
+            // Remove bullet points and clean action text
+            const actionText = trimmed
+                .replace(/^[-•▪]\s*/, '')  // Remove bullets
+                .replace(/^□\s*/, '')     // Remove checkboxes
+                .replace(/^\d+\.\s*/, '') // Remove numbers
+                .trim();
+            
+            if (actionText && actionText.length > 3) {
+                currentSection.actions.push(actionText);
+            }
+            continue;
+        }
+        
+        // If not in any special section, treat as general action item for current section
+        if (currentSection && !collectingStatus) {
+            const actionText = trimmed
+                .replace(/^[-•▪]\s*/, '')
+                .replace(/^□\s*/, '')
+                .replace(/^\d+\.\s*/, '')
+                .trim();
+            
+            // Only add if it looks like an action item (not status info)
+            if (actionText && 
+                actionText.length > 5 && 
+                !actionText.toLowerCase().includes('cathie:') &&
+                !actionText.toLowerCase().includes('malaurie:') &&
+                !actionText.toLowerCase().includes('status:')) {
+                currentSection.actions.push(actionText);
+            }
         }
     }
     
@@ -817,11 +859,14 @@ function createFallbackStructure(rawText) {
             title: "Imported Checklist",
             cathieStatus: "Status not specified",
             malaurieStatus: "Status not specified",
-            actions: lines.slice(0, 10)
+            actions: lines.slice(0, 10).map(line => 
+                line.replace(/^[-•▪□]\s*/, '').trim()
+            ).filter(action => action.length > 3)
         });
     }
     
     console.log('✅ Created fallback structure with', sections.length, 'sections');
+    console.log('📋 Sections preview:', sections.map(s => ({ id: s.id, title: s.title, actionsCount: s.actions.length })));
     return { sections };
 }
 
