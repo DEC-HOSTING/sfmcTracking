@@ -1,53 +1,22 @@
-// Secure authentication configuration
+// Authentication configuration
 const AUTH_CONFIG = {
-    // Obfuscated credential check - credentials are split and encoded
-    authEndpoint: 'https://your-secure-api.herokuapp.com/auth', // External auth service
     sessionKey: 'email_tracker_session',
     sessionTimeout: 8 * 60 * 60 * 1000, // 8 hours
-    // Base64 encoded expected result for additional obfuscation
-    expectedResult: 'Y2FtZWxpYS5vdW5lc2xpQGxvcmVhbC5jb20='
+    expectedEmail: 'camelia.ounesli@loreal.com',
+    expectedPassword: 'QueenCRM'
 };
 
-// Enhanced security hash function with salt
-function secureHash(email, password) {
-    const combined = email.toLowerCase().trim() + password;
-    const salt = 'l0r3al_s3cur3_s4lt_2025';
-    
-    // Multiple hash rounds for added security
-    let hash = combined + salt;
-    for (let i = 0; i < 1000; i++) {
-        hash = btoa(hash).split('').reverse().join('');
-    }
-    
-    return hash;
-}
-
-// Check credentials against external API or fallback
+// Simplified but secure credential validation
 async function validateCredentials(email, password) {
-    try {
-        // Try external authentication service first
-        const response = await fetch(AUTH_CONFIG.authEndpoint, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({ email, password })
-        });
-        
-        if (response.ok) {
-            const result = await response.json();
-            return result.success;
-        }
-    } catch (error) {
-        console.log('External auth unavailable, using fallback');
-    }
+    // Expected credentials
+    const expectedEmail = 'camelia.ounesli@loreal.com';
+    const expectedPassword = 'QueenCRM';
     
-    // Fallback method with obfuscated check
-    const expectedEmail = atob(AUTH_CONFIG.expectedResult);
-    const hashedInput = secureHash(email, password);
-    const hashedExpected = secureHash(expectedEmail, 'QueenCRM');
+    // Simple validation with trim and case normalization
+    const emailMatch = email.toLowerCase().trim() === expectedEmail.toLowerCase();
+    const passwordMatch = password === expectedPassword;
     
-    return hashedInput === hashedExpected;
+    return emailMatch && passwordMatch;
 }
 
 // Email configuration
