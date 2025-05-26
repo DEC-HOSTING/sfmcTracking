@@ -10,6 +10,38 @@ A comprehensive web application for tracking email campaign action items with se
 - **One-Click Import**: Paste raw checklist text and let AI structure it
 - **Format Flexibility**: Works with various checklist formats and structures
 
+#### Testing the AI Import
+You can test the AI import functionality by pasting this sample checklist:
+
+```
+Email Campaign Launch Checklist
+
+1. Pre-Launch Planning
+Cathie Status: GO - All approvals received
+Malaurie Status: GO - Creative assets ready
+- Review campaign objectives and KPIs
+- Finalize target audience segmentation
+- Approve email creative and copy
+- Set up tracking parameters
+
+2. Technical Setup
+Cathie Status: IN PROGRESS - Testing required
+Malaurie Status: GO - Systems configured
+- Configure email service provider settings
+- Set up A/B testing parameters
+- Validate email templates across devices
+- Test email deliverability
+
+3. Launch Execution
+Cathie Status: PENDING - Awaiting pre-launch completion
+Malaurie Status: PENDING - Ready for deployment
+- Schedule email deployment
+- Monitor initial delivery metrics
+- Prepare post-launch analysis
+```
+
+**How to use**: Click the AI Import button (or press Ctrl+I), paste the checklist above, and click "Import with AI" to see the magic happen!
+
 ### 🔐 Security
 - Secure login system with obfuscated credentials
 - Session management with 8-hour timeout
