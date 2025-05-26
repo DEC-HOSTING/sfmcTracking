@@ -441,6 +441,20 @@ document.addEventListener('keydown', function(event) {
             resetAllCheckboxes();
         }
     }
+    
+    // Ctrl+I to open AI import modal
+    if (event.ctrlKey && event.key === 'i') {
+        event.preventDefault();
+        showAIImportModal();
+    }
+    
+    // Escape to close AI modal
+    if (event.key === 'Escape') {
+        const modal = document.getElementById('aiImportModal');
+        if (modal && modal.style.display === 'block') {
+            hideAIImportModal();
+        }
+    }
 });
 
 function resetAllCheckboxes() {
@@ -461,3 +475,185 @@ function resetAllCheckboxes() {
 console.log('Keyboard shortcuts:');
 console.log('Ctrl+E: Export data');
 console.log('Ctrl+R: Reset all checkboxes');
+console.log('Ctrl+I: AI Import checklist');
+console.log('Escape: Close modals');
+
+// AI Configuration for Kluster AI with Mistral Nemo
+const AI_CONFIG = {
+    apiKey: '81b97b07-aa83-408e-aab3-e55ceb81b2a4',
+    baseUrl: 'https://api.kluster.ai/v1',
+    model: 'mistralai/Mistral-Nemo-Instruct-2407',
+    maxTokens: 4000,
+    temperature: 0.2 // Lower temperature for more consistent parsing
+};
+
+// AI-powered checklist parsing
+async function parseChecklistWithAI(rawText) {
+    try {
+        const prompt = `Parse the following email campaign checklist into a structured JSON format. Extract each section with its title, status information for Cathie and Malaurie, and action items. Return ONLY valid JSON with this structure:
+
+{
+  "sections": [
+    {
+      "id": 1,
+      "title": "Section Title",
+      "cathieStatus": "GO/NO-GO with details",
+      "malaurieStatus": "GO/NO-GO with details", 
+      "actions": [
+        "Action item 1",
+        "Action item 2"
+      ]
+    }
+  ]
+}
+
+Checklist to parse:
+${rawText}`;
+
+        const response = await fetch(AI_CONFIG.baseUrl + '/chat/completions', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${AI_CONFIG.apiKey}`
+            },
+            body: JSON.stringify({
+                model: AI_CONFIG.model,
+                max_completion_tokens: AI_CONFIG.maxTokens,
+                temperature: AI_CONFIG.temperature,
+                top_p: 1,
+                messages: [
+                    {
+                        role: 'system',
+                        content: 'You are an expert at parsing email campaign checklists. Always return valid JSON only, no explanations.'
+                    },
+                    {
+                        role: 'user',
+                        content: prompt
+                    }
+                ]
+            })
+        });
+
+        if (!response.ok) {
+            throw new Error(`AI API error: ${response.status}`);
+        }
+
+        const data = await response.json();
+        const aiResponse = data.choices[0].message.content;
+        
+        // Try to parse the JSON response
+        const parsedData = JSON.parse(aiResponse);
+        return parsedData;
+        
+    } catch (error) {
+        console.error('AI parsing error:', error);
+        showNotification('AI parsing failed. Please check the format and try again.', 'error');
+        return null;
+    }
+}
+
+// Update the application with AI-parsed data
+async function updateWithAIParsedData(parsedData) {
+    if (!parsedData || !parsedData.sections) {
+        showNotification('Invalid data format from AI parsing', 'error');
+        return;
+    }
+
+    try {
+        // Generate new HTML for the parsed sections
+        const newSectionsHTML = generateSectionsHTML(parsedData.sections);
+        
+        // Replace the existing action items
+        const actionItemsContainer = document.querySelector('.action-items');
+        actionItemsContainer.innerHTML = newSectionsHTML;
+        
+        // Reinitialize event listeners and state
+        setupEventListeners();
+        updateStats();
+        updateProgressBar();
+        updateEmailCta();
+        
+        showNotification(`Successfully imported ${parsedData.sections.length} sections from AI parsing!`, 'success');
+        
+        // Save the new structure
+        saveState();
+        
+    } catch (error) {
+        console.error('Error updating with AI data:', error);
+        showNotification('Error updating the application with parsed data', 'error');
+    }
+}
+
+// Generate HTML for sections from AI-parsed data
+function generateSectionsHTML(sections) {
+    return sections.map(section => `
+        <div class="action-section">
+            <h2>${section.id}. ${section.title}</h2>
+            <div class="status">
+                <span class="status-item cathie">Cathie: ${section.cathieStatus}</span>
+                <span class="status-item malaurie">Malaurie: ${section.malaurieStatus}</span>
+            </div>
+            <div class="actions">
+                ${section.actions.map((action, index) => `
+                    <label class="action-item">
+                        <input type="checkbox" data-item="${section.id}" data-action="action-${index}"> 
+                        ${action}
+                    </label>
+                `).join('')}
+            </div>
+        </div>
+    `).join('');
+}
+
+// Show AI import modal
+function showAIImportModal() {
+    const modal = document.getElementById('aiImportModal');
+    modal.style.display = 'block';
+    document.getElementById('checklistInput').focus();
+}
+
+// Hide AI import modal
+function hideAIImportModal() {
+    const modal = document.getElementById('aiImportModal');
+    modal.style.display = 'none';
+    document.getElementById('checklistInput').value = '';
+}
+
+// Process AI import
+async function processAIImport() {
+    const checklistText = document.getElementById('checklistInput').value.trim();
+    
+    if (!checklistText) {
+        showNotification('Please paste a checklist to import', 'error');
+        return;
+    }
+    
+    // Show loading state
+    const importBtn = document.querySelector('.ai-import-btn');
+    const spinner = document.querySelector('.ai-spinner');
+    const originalText = importBtn.querySelector('span').textContent;
+    
+    importBtn.disabled = true;
+    importBtn.querySelector('span').textContent = 'Processing with AI...';
+    spinner.style.display = 'inline-block';
+    
+    try {
+        // Parse with AI
+        const parsedData = await parseChecklistWithAI(checklistText);
+        
+        if (parsedData) {
+            // Update the application
+            await updateWithAIParsedData(parsedData);
+            hideAIImportModal();
+        }
+        
+    } catch (error) {
+        console.error('Import error:', error);
+        showNotification('Failed to import checklist. Please try again.', 'error');
+    } finally {
+        // Reset button state
+        importBtn.disabled = false;
+        importBtn.querySelector('span').textContent = originalText;
+        spinner.style.display = 'none';
+    }
+}

@@ -36,7 +36,12 @@
         <div class="container">        <header>
             <h1>Email Campaign Action Tracker</h1>
             <p>Track action items and send updates to thomas.nicoli@loreal.com</p>
-            <button class="logout-btn" onclick="logout()">Logout</button>
+            <div class="header-actions">
+                <button class="ai-import-btn" onclick="showAIImportModal()">
+                    🤖 AI Import Checklist
+                </button>
+                <button class="logout-btn" onclick="logout()">Logout</button>
+            </div>
         </header>
 
         <div class="progress-bar">
@@ -315,8 +320,53 @@
                 <span id="notificationText"></span>
                 <button onclick="closeNotification()">×</button>
             </div>
-        </div>
+        </div>        </div>
     </div>
+
+    <!-- AI Import Modal -->
+    <div class="ai-modal" id="aiImportModal" style="display: none;">
+        <div class="ai-modal-content">
+            <div class="ai-modal-header">
+                <h2>🤖 AI-Powered Checklist Import</h2>
+                <p>Paste your raw checklist below and let AI parse it automatically</p>
+                <button class="ai-modal-close" onclick="hideAIImportModal()">×</button>
+            </div>
+            <div class="ai-modal-body">
+                <textarea 
+                    id="checklistInput" 
+                    placeholder="Paste your checklist here...
+
+Example format:
+1. Newsletter Confirmation / Newsletter Subscription
+Status:
+Cathie: NO-GO (Issue: Space between texts)
+Malaurie: NO-GO
+
+Actions Required:
+□ Adjust spacing between text blocks
+□ Change all uppercase text to lowercase
+□ Fix Outlook rendering to ensure link appears in black (not blue)
+□ Update footer to 'Votre fidélité est récompensée'
+
+2. Welcome / Create an Account
+Status:
+Cathie: GO (No action needed)
+Malaurie: NO-GO (Spacing issue)
+
+Actions Required:
+□ Adjust text spacing
+..."
+                    rows="15"
+                ></textarea>
+            </div>
+            <div class="ai-modal-footer">
+                <button class="ai-cancel-btn" onclick="hideAIImportModal()">Cancel</button>
+                <button class="ai-import-btn" onclick="processAIImport()">
+                    <span>Import with AI</span>
+                    <div class="ai-spinner" style="display: none;"></div>
+                </button>
+            </div>
+        </div>
     </div>
 
     <script src="script.js"></script>

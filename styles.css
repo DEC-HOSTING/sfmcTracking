@@ -594,3 +594,216 @@ header p {
         opacity: 0;
     }
 }
+
+/* Header Actions */
+.header-actions {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+    margin-top: 10px;
+}
+
+.ai-import-btn {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    border: none;
+    padding: 12px 20px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: 600;
+    transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.ai-import-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px rgba(102, 126, 234, 0.4);
+}
+
+.ai-import-btn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+    transform: none;
+}
+
+/* AI Import Modal */
+.ai-modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.7);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+    backdrop-filter: blur(5px);
+}
+
+.ai-modal-content {
+    background: white;
+    border-radius: 15px;
+    width: 90%;
+    max-width: 800px;
+    max-height: 80vh;
+    overflow: hidden;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+    animation: modalSlideIn 0.3s ease-out;
+}
+
+@keyframes modalSlideIn {
+    from {
+        opacity: 0;
+        transform: translateY(-50px) scale(0.9);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
+}
+
+.ai-modal-header {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    padding: 20px;
+    position: relative;
+}
+
+.ai-modal-header h2 {
+    margin: 0 0 5px 0;
+    font-size: 24px;
+}
+
+.ai-modal-header p {
+    margin: 0;
+    opacity: 0.9;
+    font-size: 14px;
+}
+
+.ai-modal-close {
+    position: absolute;
+    top: 15px;
+    right: 20px;
+    background: none;
+    border: none;
+    color: white;
+    font-size: 28px;
+    cursor: pointer;
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background 0.3s ease;
+}
+
+.ai-modal-close:hover {
+    background: rgba(255, 255, 255, 0.2);
+}
+
+.ai-modal-body {
+    padding: 20px;
+}
+
+.ai-modal-body textarea {
+    width: 100%;
+    border: 2px solid #e1e8ed;
+    border-radius: 10px;
+    padding: 15px;
+    font-size: 14px;
+    font-family: 'Courier New', monospace;
+    resize: vertical;
+    transition: border-color 0.3s ease;
+    background: #f8f9fa;
+}
+
+.ai-modal-body textarea:focus {
+    outline: none;
+    border-color: #667eea;
+    box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+}
+
+.ai-modal-footer {
+    padding: 20px;
+    border-top: 1px solid #e1e8ed;
+    display: flex;
+    justify-content: flex-end;
+    gap: 15px;
+    background: #f8f9fa;
+}
+
+.ai-cancel-btn {
+    background: #6c757d;
+    color: white;
+    border: none;
+    padding: 12px 24px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-weight: 600;
+    transition: all 0.3s ease;
+}
+
+.ai-cancel-btn:hover {
+    background: #5a6268;
+    transform: translateY(-1px);
+}
+
+.ai-import-btn {
+    background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+    color: white;
+    border: none;
+    padding: 12px 24px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-weight: 600;
+    transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.ai-import-btn:hover:not(:disabled) {
+    transform: translateY(-1px);
+    box-shadow: 0 5px 15px rgba(40, 167, 69, 0.3);
+}
+
+/* AI Spinner */
+.ai-spinner {
+    width: 16px;
+    height: 16px;
+    border: 2px solid rgba(255, 255, 255, 0.3);
+    border-radius: 50%;
+    border-top: 2px solid white;
+    animation: aiSpin 1s linear infinite;
+}
+
+@keyframes aiSpin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+/* Responsive AI Modal */
+@media (max-width: 768px) {
+    .ai-modal-content {
+        width: 95%;
+        margin: 10px;
+    }
+    
+    .ai-modal-body textarea {
+        height: 300px;
+    }
+    
+    .ai-modal-footer {
+        flex-direction: column;
+    }
+    
+    .header-actions {
+        flex-direction: column;
+        gap: 5px;
+    }
+}

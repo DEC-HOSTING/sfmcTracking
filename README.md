@@ -4,6 +4,12 @@ A comprehensive web application for tracking email campaign action items with se
 
 ## Features
 
+### 🤖 **AI-Powered Checklist Import (NEW!)**
+- **Kluster AI Integration**: Uses Mistral Nemo model for intelligent parsing
+- **Smart Text Recognition**: Automatically extracts sections, statuses, and actions
+- **One-Click Import**: Paste raw checklist text and let AI structure it
+- **Format Flexibility**: Works with various checklist formats and structures
+
 ### 🔐 Security
 - Secure login system with obfuscated credentials
 - Session management with 8-hour timeout
@@ -25,7 +31,8 @@ A comprehensive web application for tracking email campaign action items with se
 
 ### ⚡ Functionality
 - Real-time progress tracking
-- Keyboard shortcuts (Ctrl+E export, Ctrl+R reset)
+- **AI-powered checklist import** with Mistral Nemo
+- Keyboard shortcuts (Ctrl+E export, Ctrl+R reset, **Ctrl+I AI import**)
 - Export functionality for action items
 - Automatic state persistence
 - Session timeout warnings
@@ -56,6 +63,7 @@ When action items are checked, batch email notifications are sent to: thomas.nic
 ## Technical Stack
 
 - **Frontend**: HTML5, CSS3, JavaScript (ES6+)
+- **AI Integration**: Kluster AI with Mistral Nemo Instruct 2407
 - **Styling**: Custom CSS with glassmorphism effects
 - **Storage**: localStorage for state persistence
 - **Email**: mailto: protocol for notifications
@@ -67,6 +75,51 @@ When action items are checked, batch email notifications are sent to: thomas.nic
 2. Open `index.html` in a web browser
 3. Login with the provided credentials
 4. Start tracking your email campaign action items!
+
+## 🤖 AI-Powered Checklist Import
+
+### How to Use AI Import:
+1. **Click the "🤖 AI Import Checklist" button** or press `Ctrl+I`
+2. **Paste your raw checklist** in any format
+3. **Let AI parse it automatically** using Mistral Nemo
+4. **Review and start tracking** the imported actions
+
+### Supported Formats:
+The AI can parse various checklist formats, including:
+
+```
+1. Newsletter Confirmation / Newsletter Subscription
+Status:
+Cathie: NO-GO (Issue: Space between texts)
+Malaurie: NO-GO
+
+Actions Required:
+□ Adjust spacing between text blocks
+□ Change all uppercase text to lowercase
+□ Fix Outlook rendering to ensure link appears in black (not blue)
+□ Update footer to "Votre fidélité est récompensée"
+
+2. Welcome / Create an Account
+Status:
+Cathie: GO (No action needed)
+Malaurie: NO-GO (Spacing issue)
+
+Actions Required:
+□ Adjust text spacing
+□ Change all uppercase text to lowercase
+```
+
+### AI Configuration:
+- **Model**: Mistral Nemo Instruct 2407 via Kluster AI
+- **Temperature**: 0.2 (optimized for consistent parsing)
+- **Max Tokens**: 4000
+- **Features**: Smart section detection, status extraction, action item parsing
+
+### Benefits:
+- ✅ **Save Time**: No manual data entry
+- ✅ **Reduce Errors**: AI ensures consistent formatting
+- ✅ **Flexible Input**: Works with various text formats
+- ✅ **Smart Parsing**: Automatically detects sections and actions
 
 ## Security Notes
 
