@@ -94,51 +94,39 @@ async function validateCredentials(email, password) {
         let expectedEmail, expectedPassword;
         
         try {
-            // Multi-layer decoding for enhanced security
-            expectedEmail = SecurityUtils.multiLayerDecode(AUTH_CONFIG.authData.primary[0]);
-            expectedPassword = SecurityUtils.multiLayerDecode(AUTH_CONFIG.authData.primary[1]);
-        } catch (error) {
-            console.warn('Primary decode failed, using fallback');
-            // Fallback to simple Base64 decode
+            // Simple Base64 decode for compatibility
             expectedEmail = atob(AUTH_CONFIG.authData.primary[0]);
             expectedPassword = atob(AUTH_CONFIG.authData.primary[1]);
-        }
-        
-        if (!expectedEmail || !expectedPassword) {
+        } catch (error) {
             console.error('Failed to decode credentials');
             return false;
         }
         
-        // Apply multiple hash rounds with salt for security
-        const emailHash = await hashWithSalt(email.toLowerCase().trim(), AUTH_CONFIG.salt);
-        const passwordHash = await hashWithSalt(password, AUTH_CONFIG.salt);
-        const expectedEmailHash = await hashWithSalt(expectedEmail.toLowerCase(), AUTH_CONFIG.salt);
-        const expectedPasswordHash = await hashWithSalt(expectedPassword, AUTH_CONFIG.salt);
+        if (!expectedEmail || !expectedPassword) {
+            console.error('Invalid credentials data');
+            return false;
+        }
         
-        return emailHash === expectedEmailHash && passwordHash === expectedPasswordHash;
+        // Simple secure comparison (normalize case and trim whitespace)
+        const emailMatch = email.toLowerCase().trim() === expectedEmail.toLowerCase().trim();
+        const passwordMatch = password.trim() === expectedPassword.trim();
+        
+        return emailMatch && passwordMatch;
     } catch (error) {
         console.error('Authentication error:', error);
         return false;
     }
 }
 
-// Secure hash function with salt
+// Simple secure hash function (kept for future use)
 async function hashWithSalt(data, salt) {
     const combined = data + salt;
-    
-    // Multiple rounds of hashing for security
-    let hash = combined;
-    for (let i = 0; i < AUTH_CONFIG.rounds; i++) {
-        // Use Web Crypto API for better security
-        const encoder = new TextEncoder();
-        const dataBuffer = encoder.encode(hash);
-        const hashBuffer = await crypto.subtle.digest('SHA-256', dataBuffer);
-        hash = Array.from(new Uint8Array(hashBuffer))
-            .map(b => b.toString(16).padStart(2, '0'))
-            .join('');
-    }
-    
-    return hash;
+    const encoder = new TextEncoder();
+    const dataBuffer = encoder.encode(combined);
+    const hashBuffer = await crypto.subtle.digest('SHA-256', dataBuffer);
+    return Array.from(new Uint8Array(hashBuffer))
+        .map(b => b.toString(16).padStart(2, '0'))
+        .join('');
 }
 
 // Email configuration
