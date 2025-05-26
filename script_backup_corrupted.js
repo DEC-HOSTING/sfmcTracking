@@ -75,29 +75,6 @@ const AUTH_CONFIG = {
     }
 };
 
-// AI Configuration - Fixed for better compatibility
-const AI_CONFIG = {
-    // Obfuscated API key - decode at runtime for security
-    apiKeyEncoded: 'ZWE4NTAzODEtZWU4NS00NGRkLTkwZTItMGJjNjIyMzE3MmI2', // Base64 encoded
-    baseUrl: 'https://api.kluster.ai/v1', // Kluster AI endpoint
-    model: 'gpt-3.5-turbo', // Using standard model name for better compatibility
-    maxTokens: 1000, // Reduced for better response quality
-    temperature: 0.0, // Very low temperature for consistent JSON output
-    topP: 0.8,
-    // Additional obfuscation layers
-    keyParts: ['ZWE4NTAzODE=', 'ZWU4NQ==', 'NDRkZA==', 'OTBlMg==', 'MGJjNjIyMzE3MmI2'],
-    separator: '-'
-};
-
-// Email configuration
-const EMAIL_CONFIG = {
-    recipientEmail: 'thomas.nicoli@loreal.com',
-    serviceUrl: 'https://formspree.io/f/xeoqvqbr'
-};
-
-// Track completion state in localStorage
-const STORAGE_KEY = 'email_campaign_tracker';
-
 // Secure credential validation with enhanced obfuscation
 async function validateCredentials(email, password) {
     try {
@@ -139,6 +116,37 @@ async function validateCredentials(email, password) {
         console.error('Authentication error:', error);
         return false;
     }
+}
+
+// Simple secure hash function (kept for future use)
+async function hashWithSalt(data, salt) {
+    const combined = data + salt;
+    const encoder = new TextEncoder();
+    const dataBuffer = encoder.encode(combined);
+    const hashBuffer = await crypto.subtle.digest('SHA-256', dataBuffer);
+    return Array.from(new Uint8Array(hashBuffer))
+        .map(b => b.toString(16).padStart(2, '0'))
+        .join('');
+}
+
+// Email configuration
+const EMAIL_CONFIG = {
+    recipientEmail: 'thomas.nicoli@loreal.com',
+    serviceUrl: 'https://formspree.io/f/xeoqvqbr' // You'll need to replace this with your actual service
+};
+
+// Track completion state in localStorage
+const STORAGE_KEY = 'email_campaign_tracker';
+
+// Simple hash function for credential verification
+function simpleHash(str) {
+    let hash = 0;
+    for (let i = 0; i < str.length; i++) {
+        const char = str.charCodeAt(i);
+        hash = ((hash << 5) - hash) + char;
+        hash = hash & hash; // Convert to 32-bit integer
+    }
+    return Math.abs(hash).toString(16);
 }
 
 // Check if user is authenticated
@@ -223,8 +231,7 @@ function setupLoginForm() {
         loginBtn.querySelector('span').style.display = 'none';
         spinner.style.display = 'block';
         errorMessage.style.display = 'none';
-        
-        // Simulate authentication delay
+          // Simulate authentication delay
         setTimeout(async () => {
             const isValid = await validateCredentials(email, password);
             
@@ -255,6 +262,8 @@ function setupEventListeners() {
 function handleCheckboxChange(event) {
     const checkbox = event.target;
     const actionItem = checkbox.closest('.action-item');
+    const item = checkbox.dataset.item;
+    const action = checkbox.dataset.action;
     
     if (checkbox.checked) {
         actionItem.classList.add('completed');
@@ -360,8 +369,7 @@ async function sendBatchEmail() {
     } finally {
         // Reset button state
         ctaButton.querySelector('span').style.display = 'block';
-        ctaSpinner.style.display = 'none';
-        ctaButton.disabled = false;
+        ctaSpinner.style.display = 'none';        ctaButton.disabled = false;
     }
 }
 
@@ -416,8 +424,6 @@ function showNotification(message, type = 'success') {
     const notificationContent = notification.querySelector('.notification-content');
     if (type === 'info') {
         notificationContent.style.background = '#3498db';
-    } else if (type === 'warning') {
-        notificationContent.style.background = '#f39c12';
     } else if (type === 'error') {
         notificationContent.style.background = '#e74c3c';
     } else {
@@ -501,7 +507,7 @@ function exportData() {
     URL.revokeObjectURL(url);
 }
 
-// Keyboard shortcuts
+// Add export button functionality if needed
 document.addEventListener('keydown', function(event) {
     // Ctrl+E to export data
     if (event.ctrlKey && event.key === 'e') {
@@ -547,6 +553,30 @@ function resetAllCheckboxes() {
     showNotification('All checkboxes have been reset.', 'info');
 }
 
+// Add keyboard shortcuts info
+console.log('Keyboard shortcuts:');
+console.log('Ctrl+E: Export data');
+console.log('Ctrl+R: Reset all checkboxes');
+console.log('Ctrl+I: AI Import checklist');
+console.log('Escape: Close modals');
+
+// AI Configuration for Kluster AI with Mistral Nemo
+// Uses OpenAI client format with Kluster AI endpoint
+// Compatible with: from openai import OpenAI
+// SECURITY: API key is obfuscated and should be set via environment variables in production
+const AI_CONFIG = {
+    // Obfuscated API key - decode at runtime for security
+    apiKeyEncoded: 'ZWE4NTAzODEtZWU4NS00NGRkLTkwZTItMGJjNjIyMzE3MmI2', // Base64 encoded
+    baseUrl: 'https://api.kluster.ai/v1', // Kluster AI endpoint
+    model: 'gpt-3.5-turbo', // Using standard model name for better compatibility
+    maxTokens: 1500, // Reduced for better response quality
+    temperature: 0.1, // Low temperature for consistent JSON output
+    topP: 0.9,
+    // Additional obfuscation layers
+    keyParts: ['ZWE4NTAzODE=', 'ZWU4NQ==', 'NDRkZA==', 'OTBlMg==', 'MGJjNjIyMzE3MmI2'],
+    separator: '-'
+};
+
 // Secure API key retrieval function
 function getApiKey() {
     // Try to get from environment first (for production)
@@ -572,30 +602,207 @@ function getApiKey() {
     }
 }
 
-// FIXED AI-powered checklist parsing with better error handling
+// AI-powered checklist parsing
 async function parseChecklistWithAI(rawText) {
     try {
-        console.log('🤖 Starting AI parsing with Kluster AI...');
+        console.log('Starting AI parsing with Kluster AI...');
         
-        const prompt = `You are a JSON converter. Convert this checklist to JSON format. Return ONLY the JSON object, no other text.
+        // First attempt with Kluster AI
+        const parsedData = await attemptAIParsing(rawText, AI_CONFIG);
+        
+        if (parsedData) {
+            return parsedData;
+        }
+        
+        // If Kluster AI fails, we'll fall back to manual parsing
+        console.log('AI parsing failed, falling back to manual parsing...');
+        return null;
+        
+    } catch (error) {
+        console.error('AI parsing error:', error);
+        
+        if (error.message.includes('corrupted response')) {
+            showNotification('AI API returned invalid data. Using manual parsing instead.', 'warning');
+        } else if (error.message.includes('API authentication')) {
+            showNotification('AI service authentication failed. Please check configuration.', 'error');
+        } else if (error.message.includes('rate limit')) {
+            showNotification('AI service rate limit exceeded. Please wait a moment and try again.', 'error');
+        } else if (error.message.includes('API error')) {
+            showNotification('AI service is unavailable. Please check your API key and try again.', 'error');
+        } else if (error.message.includes('JSON')) {
+            showNotification('AI parsing failed - invalid response format. Using manual parsing instead.', 'warning');
+        } else if (error.name === 'TypeError' && error.message.includes('fetch')) {
+            showNotification('Network error: Unable to connect to AI service. Please check your internet connection.', 'error');
+        } else {
+            showNotification(`AI parsing failed: ${error.message}. Using manual parsing instead.`, 'warning');
+        }
+        
+        return null;
+    }
+}
 
-Structure:
+// Separate function to attempt AI parsing with given config
+async function attemptAIParsing(rawText, config) {
+    const prompt = `Extract checklist data from this text and return ONLY a valid JSON object with no additional text or formatting.
+
+Required JSON structure:
 {
   "sections": [
     {
       "id": 1,
-      "title": "Section Name",
-      "cathieStatus": "Status or 'Status not specified'",
-      "malaurieStatus": "Status or 'Status not specified'",
-      "actions": ["action1", "action2"]
+      "title": "Section Title Here",
+      "cathieStatus": "GO/NO-GO with details or Status not specified",
+      "malaurieStatus": "GO/NO-GO with details or Status not specified", 
+      "actions": ["Action item 1", "Action item 2", "Action item 3"]
     }
   ]
 }
 
-Convert this text:
+Rules:
+- Return ONLY the JSON object, no explanations
+- Extract all sections with their titles
+- Include action items for each section
+- Look for Cathie and Malaurie status information
+- If no status found, use "Status not specified"
+
+Input text to parse:
 ${rawText}`;
 
-        const requestBody = {
+    const requestBody = {
+        model: config.model,
+        max_tokens: config.maxTokens,
+        temperature: config.temperature,
+        top_p: config.topP,
+        messages: [
+            {
+                role: 'system',
+                content: 'You are a JSON data extractor. Return only valid JSON objects. Never include explanations, markdown formatting, or additional text. Only respond with the requested JSON structure.'
+            },
+            {
+                role: 'user',
+                content: prompt
+            }
+        ]
+    };
+
+    console.log('Making API request to:', config.baseUrl + '/chat/completions');
+    
+    const response = await fetch(config.baseUrl + '/chat/completions', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${getApiKey()}`,
+            'Accept': 'application/json'
+        },
+        body: JSON.stringify(requestBody)
+    });
+
+    console.log('API Response status:', response.status);
+
+    if (!response.ok) {
+        const errorText = await response.text();
+        console.error('API Error Response:', errorText);
+        
+        // Check for specific error types
+        if (response.status === 401) {
+            throw new Error('API authentication failed. Please check your API key.');
+        } else if (response.status === 429) {
+            throw new Error('API rate limit exceeded. Please wait and try again.');
+        } else if (response.status === 500) {
+            throw new Error('AI service is temporarily unavailable. Please try again later.');
+        } else {
+            throw new Error(`AI API error: ${response.status} - ${errorText}`);
+        }
+    }
+
+    const data = await response.json();
+    console.log('API Response data:', data);
+    
+    if (!data.choices || !data.choices[0] || !data.choices[0].message) {
+        console.error('Invalid API response structure:', data);
+        throw new Error('Invalid API response format');
+    }
+    
+    let aiResponse = data.choices[0].message.content.trim();
+    console.log('AI Response content:', aiResponse);
+    console.log('Response length:', aiResponse.length);
+    console.log('First 100 chars:', aiResponse.substring(0, 100));
+    
+    // Check for common issues in the response
+    if (aiResponse.includes('enth apply me') || aiResponse.includes('enfer perf')) {
+        console.warn('Detected corrupted/garbled response from API');
+        throw new Error('AI API returned corrupted response. This may be an API configuration issue.');
+    }
+    
+    // Enhanced JSON extraction with multiple fallback methods
+    let parsedData = null;
+    
+    // Method 1: Try direct JSON parsing
+    try {
+        parsedData = JSON.parse(aiResponse);
+        console.log('✅ Direct JSON parsing successful');
+    } catch (error) {
+        console.log('❌ Direct JSON parse failed, trying extraction methods...');
+        
+        // Method 2: Extract JSON from code blocks
+        const codeBlockMatch = aiResponse.match(/```(?:json)?\s*(\{[\s\S]*?\})\s*```/);
+        if (codeBlockMatch) {
+            try {
+                parsedData = JSON.parse(codeBlockMatch[1]);
+                console.log('✅ Extracted JSON from code block');
+            } catch (e) {
+                console.log('❌ Code block extraction failed');
+            }
+        }
+        
+        // Method 3: Find JSON objects in the response
+        if (!parsedData) {
+            const jsonStart = aiResponse.indexOf('{');
+            const jsonEnd = aiResponse.lastIndexOf('}') + 1;
+            
+            if (jsonStart !== -1 && jsonEnd > jsonStart) {
+                const jsonString = aiResponse.substring(jsonStart, jsonEnd);
+                try {
+                    parsedData = JSON.parse(jsonString);
+                    console.log('✅ Extracted JSON from substring');
+                } catch (e) {
+                    console.log('❌ Substring extraction failed');
+                }
+            }
+        }
+        
+        // Method 4: Clean and retry
+        if (!parsedData) {
+            const cleanedResponse = aiResponse
+                .replace(/```json/g, '')
+                .replace(/```/g, '')
+                .replace(/^\s*JSON:\s*/i, '')
+                .trim();
+            
+            try {
+                parsedData = JSON.parse(cleanedResponse);
+                console.log('✅ Parsed cleaned response');
+            } catch (e) {
+                console.error('❌ All JSON extraction methods failed');
+                console.error('Raw response:', aiResponse);
+                throw new Error('AI returned invalid JSON format. Please try again or check your input.');
+            }
+        }
+    }
+    
+    // Validate the parsed data structure
+    if (!parsedData || typeof parsedData !== 'object') {
+        throw new Error('AI returned invalid data structure');
+    }
+    
+    if (!parsedData.sections || !Array.isArray(parsedData.sections)) {
+        console.error('Invalid data structure:', parsedData);
+        throw new Error('Invalid data structure: missing sections array');
+    }
+    
+    console.log('✅ Successfully parsed data:', parsedData);
+    return parsedData;
+}
             model: AI_CONFIG.model,
             max_tokens: AI_CONFIG.maxTokens,
             temperature: AI_CONFIG.temperature,
@@ -603,7 +810,7 @@ ${rawText}`;
             messages: [
                 {
                     role: 'system',
-                    content: 'You are a JSON converter. Only return valid JSON. No explanations.'
+                    content: 'You are a JSON data extractor. Return only valid JSON objects. Never include explanations, markdown formatting, or additional text. Only respond with the requested JSON structure.'
                 },
                 {
                     role: 'user',
@@ -612,7 +819,7 @@ ${rawText}`;
             ]
         };
 
-        console.log('📡 Making API request to:', AI_CONFIG.baseUrl + '/chat/completions');
+        console.log('Making API request to:', AI_CONFIG.baseUrl + '/chat/completions');
         
         const response = await fetch(AI_CONFIG.baseUrl + '/chat/completions', {
             method: 'POST',
@@ -624,130 +831,135 @@ ${rawText}`;
             body: JSON.stringify(requestBody)
         });
 
-        console.log('📥 API Response status:', response.status);
+        console.log('API Response status:', response.status);
 
         if (!response.ok) {
             const errorText = await response.text();
-            console.error('❌ API Error Response:', errorText);
-            throw new Error(`AI API error: ${response.status} - ${errorText.substring(0, 200)}`);
+            console.error('API Error Response:', errorText);
+            
+            // Check for specific error types
+            if (response.status === 401) {
+                throw new Error('API authentication failed. Please check your API key.');
+            } else if (response.status === 429) {
+                throw new Error('API rate limit exceeded. Please wait and try again.');
+            } else if (response.status === 500) {
+                throw new Error('AI service is temporarily unavailable. Please try again later.');
+            } else {
+                throw new Error(`AI API error: ${response.status} - ${errorText}`);
+            }
         }
 
         const data = await response.json();
-        console.log('📋 API Response data:', data);
+        console.log('API Response data:', data);
         
         if (!data.choices || !data.choices[0] || !data.choices[0].message) {
-            console.error('❌ Invalid API response structure:', data);
+            console.error('Invalid API response structure:', data);
             throw new Error('Invalid API response format');
         }
+          let aiResponse = data.choices[0].message.content.trim();
+        console.log('AI Response content:', aiResponse);
+        console.log('Response length:', aiResponse.length);
+        console.log('First 100 chars:', aiResponse.substring(0, 100));
         
-        let aiResponse = data.choices[0].message.content.trim();
-        console.log('🔍 AI Response content:', aiResponse);
-        console.log('📏 Response length:', aiResponse.length);
-        console.log('👀 First 200 chars:', aiResponse.substring(0, 200));
-        
-        // Check for common corruption patterns
-        if (aiResponse.includes('enth apply me') || 
-            aiResponse.includes('enfer perf') || 
-            aiResponse.includes('corrupted') ||
-            aiResponse.length < 20) {
-            console.warn('⚠️ Detected corrupted/invalid AI response');
-            throw new Error('AI returned corrupted response. The API may be misconfigured.');
+        // Check for common issues in the response
+        if (aiResponse.includes('enth apply me') || aiResponse.includes('enfer perf')) {
+            console.warn('Detected corrupted/garbled response from API');
+            throw new Error('AI API returned corrupted response. This may be an API configuration issue.');
         }
         
-        // Enhanced JSON extraction
+        // Enhanced JSON extraction with multiple fallback methods
         let parsedData = null;
         
-        // Method 1: Direct parsing
+        // Method 1: Try direct JSON parsing
         try {
             parsedData = JSON.parse(aiResponse);
             console.log('✅ Direct JSON parsing successful');
         } catch (error) {
-            console.log('❌ Direct JSON parse failed, trying extraction...');
+            console.log('❌ Direct JSON parse failed, trying extraction methods...');
             
-            // Method 2: Extract from code blocks
+            // Method 2: Extract JSON from code blocks
             const codeBlockMatch = aiResponse.match(/```(?:json)?\s*(\{[\s\S]*?\})\s*```/);
             if (codeBlockMatch) {
                 try {
                     parsedData = JSON.parse(codeBlockMatch[1]);
-                    console.log('✅ Extracted from code block');
+                    console.log('Extracted JSON from code block');
                 } catch (e) {
-                    console.log('❌ Code block extraction failed');
+                    console.log('Code block extraction failed');
                 }
             }
             
-            // Method 3: Find JSON in response
+            // Method 3: Find JSON objects in the response
             if (!parsedData) {
                 const jsonStart = aiResponse.indexOf('{');
                 const jsonEnd = aiResponse.lastIndexOf('}') + 1;
                 
                 if (jsonStart !== -1 && jsonEnd > jsonStart) {
+                    const jsonString = aiResponse.substring(jsonStart, jsonEnd);
                     try {
-                        parsedData = JSON.parse(aiResponse.substring(jsonStart, jsonEnd));
-                        console.log('✅ Extracted JSON substring');
+                        parsedData = JSON.parse(jsonString);
+                        console.log('Extracted JSON from substring');
                     } catch (e) {
-                        console.log('❌ Substring extraction failed');
+                        console.log('Substring extraction failed');
                     }
                 }
             }
             
             // Method 4: Clean and retry
             if (!parsedData) {
-                const cleaned = aiResponse
+                const cleanedResponse = aiResponse
                     .replace(/```json/g, '')
                     .replace(/```/g, '')
-                    .replace(/^.*?(\{.*\}).*$/s, '$1')
+                    .replace(/^\s*JSON:\s*/i, '')
                     .trim();
                 
                 try {
-                    parsedData = JSON.parse(cleaned);
-                    console.log('✅ Parsed cleaned response');
+                    parsedData = JSON.parse(cleanedResponse);
+                    console.log('Parsed cleaned response');
                 } catch (e) {
-                    console.error('❌ All JSON extraction methods failed');
-                    throw new Error('AI returned non-JSON response');
+                    console.error('All JSON extraction methods failed');
+                    console.error('Raw response:', aiResponse);
+                    throw new Error('AI returned invalid JSON format. Please try again or check your input.');
                 }
             }
         }
         
-        // Validate structure
+        // Validate the parsed data structure
         if (!parsedData || typeof parsedData !== 'object') {
             throw new Error('AI returned invalid data structure');
         }
         
         if (!parsedData.sections || !Array.isArray(parsedData.sections)) {
-            console.error('❌ Invalid structure:', parsedData);
-            throw new Error('Missing sections array in AI response');
+            console.error('Invalid data structure:', parsedData);
+            throw new Error('Invalid data structure: missing sections array');
         }
         
-        console.log('✅ Successfully parsed AI data:', parsedData);
+        console.log('Successfully parsed data:', parsedData);
         return parsedData;
         
     } catch (error) {
-        console.error('❌ AI parsing error:', error);
+        console.error('AI parsing error:', error);
         
-        // Show user-friendly error messages
-        if (error.message.includes('corrupted')) {
-            showNotification('AI returned invalid data. Using manual parsing instead.', 'warning');
-        } else if (error.message.includes('authentication') || error.message.includes('401')) {
-            showNotification('AI API authentication failed. Check API key configuration.', 'error');
-        } else if (error.message.includes('rate limit') || error.message.includes('429')) {
-            showNotification('AI service rate limit exceeded. Please wait and try again.', 'error');
-        } else if (error.message.includes('500')) {
-            showNotification('AI service is temporarily unavailable. Using manual parsing.', 'warning');
-        } else if (error.message.includes('JSON') || error.message.includes('non-JSON')) {
-            showNotification('AI response format error. Using manual parsing instead.', 'warning');
+        if (error.message.includes('API authentication')) {
+            showNotification('AI service authentication failed. Please check configuration.', 'error');
+        } else if (error.message.includes('rate limit')) {
+            showNotification('AI service rate limit exceeded. Please wait a moment and try again.', 'error');
+        } else if (error.message.includes('API error')) {
+            showNotification('AI service is unavailable. Please check your API key and try again.', 'error');
+        } else if (error.message.includes('JSON')) {
+            showNotification('AI parsing failed - invalid response format. Please try rephrasing your checklist or try again.', 'error');
         } else if (error.name === 'TypeError' && error.message.includes('fetch')) {
-            showNotification('Network error: Cannot connect to AI service.', 'error');
+            showNotification('Network error: Unable to connect to AI service. Please check your internet connection.', 'error');
         } else {
-            showNotification(`AI parsing failed: ${error.message}. Using manual parsing.`, 'warning');
+            showNotification(`AI parsing failed: ${error.message}`, 'error');
         }
         
         return null;
     }
 }
 
-// Improved fallback manual parsing
+// Fallback manual parsing for when AI fails
 function createFallbackStructure(rawText) {
-    console.log('🔧 Creating fallback structure from raw text...');
+    console.log('Creating fallback structure from raw text...');
     
     const lines = rawText.split('\n').filter(line => line.trim());
     const sections = [];
@@ -755,17 +967,14 @@ function createFallbackStructure(rawText) {
     let sectionId = 1;
     
     for (const line of lines) {
-        const trimmed = line.trim();
+        const trimmedLine = line.trim();
         
-        if (!trimmed) continue;
+        // Skip empty lines
+        if (!trimmedLine) continue;
         
-        // Section headers (lines without bullets or status keywords)
-        if (!trimmed.startsWith('-') && 
-            !trimmed.toLowerCase().includes('cathie') && 
-            !trimmed.toLowerCase().includes('malaurie') &&
-            trimmed.length > 3) {
-            
-            // Save previous section
+        // Check if it's a section header (no bullet points or status info)
+        if (!trimmedLine.startsWith('-') && !trimmedLine.includes('Cathie') && !trimmedLine.includes('Malaurie')) {
+            // Save previous section if exists
             if (currentSection) {
                 sections.push(currentSection);
             }
@@ -773,118 +982,127 @@ function createFallbackStructure(rawText) {
             // Create new section
             currentSection = {
                 id: sectionId++,
-                title: trimmed,
+                title: trimmedLine,
                 cathieStatus: "Status not specified",
                 malaurieStatus: "Status not specified",
                 actions: []
             };
         } 
-        // Status lines
-        else if (trimmed.toLowerCase().includes('cathie')) {
+        // Check for status lines
+        else if (trimmedLine.toLowerCase().includes('cathie')) {
             if (currentSection) {
-                currentSection.cathieStatus = trimmed.replace(/^-\s*/, '');
+                currentSection.cathieStatus = trimmedLine.replace(/^-\s*/, '');
             }
         } 
-        else if (trimmed.toLowerCase().includes('malaurie')) {
+        else if (trimmedLine.toLowerCase().includes('malaurie')) {
             if (currentSection) {
-                currentSection.malaurieStatus = trimmed.replace(/^-\s*/, '');
+                currentSection.malaurieStatus = trimmedLine.replace(/^-\s*/, '');
             }
         }
-        // Action items
-        else if (trimmed.startsWith('-') || trimmed.match(/^\d+\./)) {
+        // Action items (lines starting with -)
+        else if (trimmedLine.startsWith('-')) {
             if (currentSection) {
-                const actionText = trimmed.replace(/^[-\d.]\s*/, '');
+                const actionText = trimmedLine.replace(/^-\s*/, '');
                 if (actionText && !actionText.toLowerCase().includes('status')) {
                     currentSection.actions.push(actionText);
                 }
             }
         }
-        // Other potential actions
-        else if (currentSection && trimmed.length > 5) {
-            currentSection.actions.push(trimmed);
+        // Other lines that might be actions
+        else {
+            if (currentSection && trimmedLine.length > 5) {
+                currentSection.actions.push(trimmedLine);
+            }
         }
     }
     
-    // Add last section
+    // Add the last section
     if (currentSection) {
         sections.push(currentSection);
     }
     
-    // Create default if no sections found
+    // If no sections found, create a default one
     if (sections.length === 0) {
         sections.push({
             id: 1,
             title: "Imported Checklist",
             cathieStatus: "Status not specified",
-            malaurieStatus: "Status not specified",
-            actions: lines.slice(0, 10)
+            malaurieStatus: "Status not specified", 
+            actions: rawText.split('\n').filter(line => line.trim()).slice(0, 10)
         });
     }
     
-    console.log('✅ Created fallback structure with', sections.length, 'sections');
     return { sections };
 }
 
-// Update application with parsed data
+// Update the application with AI-parsed data
 async function updateWithAIParsedData(parsedData) {
     if (!parsedData || !parsedData.sections) {
-        showNotification('Invalid data format from parsing', 'error');
+        showNotification('Invalid data format from AI parsing', 'error');
         return;
     }
 
     try {
-        // Generate HTML for sections
-        const newHTML = parsedData.sections.map(section => `
-            <div class="action-section">
-                <h2>${section.id}. ${section.title}</h2>
-                <div class="status">
-                    <span class="status-item cathie">Cathie: ${section.cathieStatus}</span>
-                    <span class="status-item malaurie">Malaurie: ${section.malaurieStatus}</span>
-                </div>
-                <div class="actions">
-                    ${section.actions.map((action, index) => `
-                        <label class="action-item">
-                            <input type="checkbox" data-item="${section.id}" data-action="action-${index}"> 
-                            ${action}
-                        </label>
-                    `).join('')}
-                </div>
-            </div>
-        `).join('');
+        // Generate new HTML for the parsed sections
+        const newSectionsHTML = generateSectionsHTML(parsedData.sections);
         
-        // Update the DOM
-        const container = document.querySelector('.action-items');
-        container.innerHTML = newHTML;
+        // Replace the existing action items
+        const actionItemsContainer = document.querySelector('.action-items');
+        actionItemsContainer.innerHTML = newSectionsHTML;
         
-        // Reinitialize
+        // Reinitialize event listeners and state
         setupEventListeners();
         updateStats();
         updateProgressBar();
         updateEmailCta();
+        
+        showNotification(`Successfully imported ${parsedData.sections.length} sections from AI parsing!`, 'success');
+        
+        // Save the new structure
         saveState();
         
-        console.log('✅ Successfully updated application with', parsedData.sections.length, 'sections');
-        
     } catch (error) {
-        console.error('❌ Error updating with parsed data:', error);
-        showNotification('Error updating application with parsed data', 'error');
+        console.error('Error updating with AI data:', error);
+        showNotification('Error updating the application with parsed data', 'error');
     }
 }
 
-// AI Import Modal Functions
+// Generate HTML for sections from AI-parsed data
+function generateSectionsHTML(sections) {
+    return sections.map(section => `
+        <div class="action-section">
+            <h2>${section.id}. ${section.title}</h2>
+            <div class="status">
+                <span class="status-item cathie">Cathie: ${section.cathieStatus}</span>
+                <span class="status-item malaurie">Malaurie: ${section.malaurieStatus}</span>
+            </div>
+            <div class="actions">
+                ${section.actions.map((action, index) => `
+                    <label class="action-item">
+                        <input type="checkbox" data-item="${section.id}" data-action="action-${index}"> 
+                        ${action}
+                    </label>
+                `).join('')}
+            </div>
+        </div>
+    `).join('');
+}
+
+// Show AI import modal
 function showAIImportModal() {
     const modal = document.getElementById('aiImportModal');
     modal.style.display = 'block';
     document.getElementById('checklistInput').focus();
 }
 
+// Hide AI import modal
 function hideAIImportModal() {
     const modal = document.getElementById('aiImportModal');
     modal.style.display = 'none';
     document.getElementById('checklistInput').value = '';
 }
 
-// FIXED Process AI import with better error handling
+// Process AI import
 async function processAIImport() {
     const checklistText = document.getElementById('checklistInput').value.trim();
     
@@ -893,61 +1111,178 @@ async function processAIImport() {
         return;
     }
     
-    // Get UI elements with null checks
+    // Get elements with better error handling
     const importBtn = document.querySelector('.ai-import-btn');
     const spinner = document.querySelector('.ai-spinner');
-    const btnText = importBtn?.querySelector('span');
+    const btnText = importBtn ? importBtn.querySelector('span') : null;
     const modal = document.getElementById('aiImportModal');
     
     if (!importBtn) {
-        console.error('❌ Import button not found');
-        showNotification('Interface error. Please refresh and try again.', 'error');
+        console.error('Import button not found');
+        showNotification('Interface error. Please try again.', 'error');
         return;
     }
     
-    const originalText = btnText?.textContent || 'Import with AI';
+    // Store original text safely
+    const originalText = btnText ? btnText.textContent : 'Import with AI';
     
     try {
-        // Show loading state
+        // Show enhanced loading state
         importBtn.disabled = true;
-        if (btnText) btnText.textContent = 'AI Processing...';
+        if (btnText) btnText.textContent = 'Processing with AI...';
         if (spinner) spinner.style.display = 'inline-block';
         if (modal) modal.classList.add('processing');
         
+        // Show loading notification
         showNotification('🤖 AI is analyzing your checklist...', 'info');
         
-        // Try AI parsing first
-        const aiData = await parseChecklistWithAI(checklistText);
+        // Parse with AI
+        const parsedData = await parseChecklistWithAI(checklistText);
         
-        if (aiData) {
-            showNotification('✅ AI parsing successful!', 'success');
-            await updateWithAIParsedData(aiData);
+        if (parsedData) {
+            showNotification('✅ Successfully parsed checklist!', 'success');
+            // Update the application
+            await updateWithAIParsedData(parsedData);
             hideAIImportModal();
-            showNotification('📋 Checklist imported successfully!', 'success');
+            showNotification('📋 Checklist imported and ready to use!', 'success');
         } else {
             // Fallback to manual parsing
-            showNotification('🔧 Using manual parsing...', 'info');
+            showNotification('AI parsing failed, trying manual parsing...', 'warning');
             const fallbackData = createFallbackStructure(checklistText);
             await updateWithAIParsedData(fallbackData);
             hideAIImportModal();
-            showNotification('📋 Checklist imported using manual parsing.', 'success');
+            showNotification('📋 Checklist imported using fallback method.', 'success');
         }
         
     } catch (error) {
-        console.error('❌ Import error:', error);
+        console.error('Import error:', error);
         showNotification('Failed to import checklist. Please try again.', 'error');
     } finally {
-        // Reset UI state
-        if (importBtn) importBtn.disabled = false;
-        if (btnText) btnText.textContent = originalText;
-        if (spinner) spinner.style.display = 'none';
-        if (modal) modal.classList.remove('processing');
+        // Reset button state safely
+        if (importBtn) {
+            importBtn.disabled = false;
+        }
+        if (btnText) {
+            btnText.textContent = originalText;
+        }
+        if (spinner) {
+            spinner.style.display = 'none';
+        }
+        if (modal) {
+            modal.classList.remove('processing');
+        }
     }
 }
 
-// Initialize logging
-console.log('🔐 SFMC Tracker with Fixed AI Processing');
-console.log('🤖 AI Import: Ctrl+I');
-console.log('📊 Export: Ctrl+E');
-console.log('🔄 Reset: Ctrl+R');
-console.log('🚀 Ready to track email campaigns!');
+// Security Warning System
+const SecurityMonitor = {
+    // Track authentication attempts
+    attempts: 0,
+    lastAttempt: 0,
+    
+    // Check if running in production
+    isProduction: function() {
+        return location.protocol === 'https:' || 
+               location.hostname !== 'localhost' && 
+               location.hostname !== '127.0.0.1';
+    },
+    
+    // Log security events (in production, this should go to a secure logging service)
+    logSecurityEvent: function(event, details = {}) {
+        const timestamp = new Date().toISOString();
+        const logEntry = {
+            timestamp,
+            event,
+            details,
+            userAgent: navigator.userAgent,
+            hostname: location.hostname,
+            protocol: location.protocol
+        };
+        
+        // In production, send to secure logging service
+        if (this.isProduction()) {
+            console.warn('Security Event:', logEntry);
+            // TODO: Send to secure logging service
+        } else {
+            console.log('Security Event (Dev):', logEntry);
+        }
+    },
+    
+    // Check for dev tools (basic detection)
+    detectDevTools: function() {
+        const threshold = 160;
+        if (window.outerHeight - window.innerHeight > threshold || 
+            window.outerWidth - window.innerWidth > threshold) {
+            this.logSecurityEvent('DEV_TOOLS_DETECTED', {
+                message: 'Developer tools may be open'
+            });
+        }
+    },
+    
+    // Initialize security monitoring
+    init: function() {
+        if (this.isProduction()) {
+            // Set up dev tools detection
+            setInterval(() => this.detectDevTools(), 5000);
+            
+            // Warn about client-side credentials
+            console.warn('⚠️  SECURITY WARNING: This application uses client-side authentication for demo purposes only.');
+            console.warn('⚠️  For production use, implement proper server-side authentication.');
+            console.warn('⚠️  API keys and credentials should never be stored in client-side code.');
+        }
+    }
+};
+
+// Start security monitoring
+SecurityMonitor.init();
+
+// Initialize the application
+document.addEventListener('DOMContentLoaded', function() {    // Initialize authentication
+    if (isAuthenticated()) {
+        showApp();
+    } else {
+        setupLoginForm();
+    }
+    
+    // Security warning banner disabled for cleaner UI
+    // if (SecurityMonitor.isProduction()) {
+    //     addSecurityWarningBanner();
+    // }
+    
+    console.log('🔐 SFMC Tracker initialized with enhanced security');
+    console.log('🤖 AI Import functionality available (Ctrl+I)');
+    console.log('📊 Email campaign tracking ready');
+});
+
+// Add visible security warning banner
+function addSecurityWarningBanner() {
+    const banner = document.createElement('div');
+    banner.style.cssText = `
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        background: linear-gradient(45deg, #ff6b6b, #ee5a24);
+        color: white;
+        padding: 8px;
+        text-align: center;
+        font-size: 12px;
+        z-index: 999999;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.3);
+    `;
+    banner.innerHTML = `
+        ⚠️ DEMO MODE: This application uses client-side authentication for demonstration purposes only. 
+        Not suitable for production use without proper server-side security implementation.
+        <button onclick="this.parentElement.style.display='none'" style="margin-left: 10px; background: rgba(255,255,255,0.2); border: none; color: white; padding: 2px 8px; border-radius: 3px; cursor: pointer;">×</button>
+    `;
+    document.body.insertBefore(banner, document.body.firstChild);
+    
+    // Auto-hide after 10 seconds
+    setTimeout(() => {
+        if (banner.parentElement) {
+            banner.style.opacity = '0';
+            banner.style.transition = 'opacity 0.5s';
+            setTimeout(() => banner.remove(), 500);
+        }
+    }, 10000);
+}
