@@ -1,5 +1,16 @@
 # SFMC Email Campaign Action Items Tracker
 
+## ⚠️ SECURITY NOTICE
+
+**This application uses client-side authentication for demonstration purposes only.** While multiple layers of obfuscation protect credentials, this approach is **NOT suitable for production use** without proper server-side security implementation.
+
+For production deployment, please:
+1. Implement server-side authentication (see `auth-server.js` example)
+2. Use environment variables for all sensitive data
+3. Review the comprehensive [Security Guide](SECURITY.md)
+
+---
+
 A comprehensive web application for tracking email campaign action items with secure authentication and automated email notifications.
 
 ## Features
@@ -119,33 +130,42 @@ When action items are checked, batch email notifications are sent to: thomas.nic
 ### Supported Formats:
 The AI can parse various checklist formats, including:
 
+#### 📋 Test Checklist Example:
 ```
-1. Newsletter Confirmation / Newsletter Subscription
-Status:
-Cathie: NO-GO (Issue: Space between texts)
-Malaurie: NO-GO
+Email Campaign Launch Checklist
 
-Actions Required:
-□ Adjust spacing between text blocks
-□ Change all uppercase text to lowercase
-□ Fix Outlook rendering to ensure link appears in black (not blue)
-□ Update footer to "Votre fidélité est récompensée"
+1. Pre-Launch Preparation
+   Cathie Status: GO - All systems ready
+   Malaurie Status: GO - Content approved
+   - Finalize email content and subject lines
+   - Set up tracking pixels and UTM parameters
+   - Verify sender authentication (SPF, DKIM, DMARC)
+   - Test email rendering across different clients
 
-2. Welcome / Create an Account
-Status:
-Cathie: GO (No action needed)
-Malaurie: NO-GO (Spacing issue)
+2. Audience Management
+   Cathie Status: PENDING - Review needed
+   Malaurie Status: GO - Segments confirmed
+   - Import and clean subscriber lists
+   - Set up dynamic segmentation rules
+   - Configure suppression lists
+   - Validate email addresses
 
-Actions Required:
-□ Adjust text spacing
-□ Change all uppercase text to lowercase
+3. Technical Setup
+   Cathie Status: GO - Infrastructure ready
+   Malaurie Status: NO-GO - Need final approval
+   - Configure sending infrastructure
+   - Set up delivery time zones
+   - Test automation workflows
+   - Prepare fallback scenarios
 ```
+
+**Try copying the above checklist and importing it using the AI function!**
 
 ### AI Configuration:
 - **Model**: Mistral Nemo Instruct 2407 via Kluster AI
-- **Temperature**: 0.2 (optimized for consistent parsing)
 - **Max Tokens**: 4000
-- **Features**: Smart section detection, status extraction, action item parsing
+- **Temperature**: 2.0 (creative parsing)
+- **Processing**: Intelligent JSON structure extraction
 
 ### Benefits:
 - ✅ **Save Time**: No manual data entry

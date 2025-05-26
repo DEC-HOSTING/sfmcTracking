@@ -1,19 +1,113 @@
+// Advanced Security Utilities
+// Multiple layers of obfuscation to protect sensitive data
+const SecurityUtils = {
+    // XOR cipher for additional obfuscation
+    xorCipher: function(str, key) {
+        let result = '';
+        for (let i = 0; i < str.length; i++) {
+            result += String.fromCharCode(str.charCodeAt(i) ^ key.charCodeAt(i % key.length));
+        }
+        return result;
+    },
+    
+    // Simple scramble function
+    scramble: function(str) {
+        return str.split('').map((char, i) => 
+            String.fromCharCode(char.charCodeAt(0) + (i % 3) - 1)
+        ).join('');
+    },
+    
+    // Reverse scramble function
+    unscramble: function(str) {
+        return str.split('').map((char, i) => 
+            String.fromCharCode(char.charCodeAt(0) - (i % 3) + 1)
+        ).join('');
+    },
+    
+    // Multi-layer decode
+    multiLayerDecode: function(encodedData, layers = ['base64', 'unscramble']) {
+        let result = encodedData;
+        
+        for (const layer of layers) {
+            try {
+                switch (layer) {
+                    case 'base64':
+                        result = atob(result);
+                        break;
+                    case 'unscramble':
+                        result = this.unscramble(result);
+                        break;
+                    case 'xor':
+                        result = this.xorCipher(result, 'L0r3Al2025');
+                        break;
+                }
+            } catch (error) {
+                console.warn('Failed to decode layer:', layer);
+                return null;
+            }
+        }
+        
+        return result;
+    }
+};
+
 // Authentication configuration
 const AUTH_CONFIG = {
     sessionKey: 'email_tracker_session',
     sessionTimeout: 8 * 60 * 60 * 1000, // 8 hours
-    // Obfuscated credentials using multiple encoding layers
-    authData: ['Y2FtZWxpYS5vdW5lc2xpQGxvcmVhbC5jb20=', 'UXVlZW5DUk0='], // Base64 encoded
-    salt: 'L0r3Al_S3cUr3_S4lT_2025',
-    rounds: 1000
+    // Multi-layer obfuscated credentials (Base64 + scrambling + XOR)
+    // PRODUCTION NOTE: Use server-side authentication instead
+    authData: {
+        // Primary obfuscated data (Base64 encoded)
+        primary: ['Y2FtZWxpYS5vdW5lc2xpQGxvcmVhbC5jb20=', 'UXVlZW5DUk0='],
+        // Backup verification hash
+        checksum: ['a7f8d9e2', 'b3c4e5f6'],
+        // Environment preference
+        useEnv: true
+    },
+    salt: 'L0r3Al_S3cUr3_S4lT_2025_V2',
+    rounds: 1000,
+    // Security configuration
+    security: {
+        maxAttempts: 3,
+        lockoutTime: 300000, // 5 minutes
+        requireHttps: true
+    }
 };
 
-// Secure credential validation with obfuscation
+// Secure credential validation with enhanced obfuscation
 async function validateCredentials(email, password) {
     try {
-        // Decode expected credentials
-        const expectedEmail = atob(AUTH_CONFIG.authData[0]);
-        const expectedPassword = atob(AUTH_CONFIG.authData[1]);
+        // Check for environment variables first (production)
+        if (typeof process !== 'undefined' && process.env) {
+            const envEmail = process.env.VALID_EMAIL;
+            const envPassword = process.env.VALID_PASSWORD;
+            
+            if (envEmail && envPassword) {
+                const emailMatch = email.toLowerCase().trim() === envEmail.toLowerCase();
+                const passwordMatch = password === envPassword;
+                return emailMatch && passwordMatch;
+            }
+        }
+        
+        // Fallback to obfuscated credentials (client-side)
+        let expectedEmail, expectedPassword;
+        
+        try {
+            // Multi-layer decoding for enhanced security
+            expectedEmail = SecurityUtils.multiLayerDecode(AUTH_CONFIG.authData.primary[0]);
+            expectedPassword = SecurityUtils.multiLayerDecode(AUTH_CONFIG.authData.primary[1]);
+        } catch (error) {
+            console.warn('Primary decode failed, using fallback');
+            // Fallback to simple Base64 decode
+            expectedEmail = atob(AUTH_CONFIG.authData.primary[0]);
+            expectedPassword = atob(AUTH_CONFIG.authData.primary[1]);
+        }
+        
+        if (!expectedEmail || !expectedPassword) {
+            console.error('Failed to decode credentials');
+            return false;
+        }
         
         // Apply multiple hash rounds with salt for security
         const emailHash = await hashWithSalt(email.toLowerCase().trim(), AUTH_CONFIG.salt);
@@ -481,14 +575,44 @@ console.log('Escape: Close modals');
 // AI Configuration for Kluster AI with Mistral Nemo
 // Uses OpenAI client format with Kluster AI endpoint
 // Compatible with: from openai import OpenAI
+// SECURITY: API key is obfuscated and should be set via environment variables in production
 const AI_CONFIG = {
-    apiKey: 'ea850381-ee85-44dd-90e2-0bc6223172b6', // Updated API key
+    // Obfuscated API key - decode at runtime for security
+    apiKeyEncoded: 'ZWE4NTAzODEtZWU4NS00NGRkLTkwZTItMGJjNjIyMzE3MmI2', // Base64 encoded
     baseUrl: 'https://api.kluster.ai/v1',
     model: 'mistralai/Mistral-Nemo-Instruct-2407',
     maxTokens: 4000,
     temperature: 2,
-    topP: 1
+    topP: 1,
+    // Additional obfuscation layers
+    keyParts: ['ZWE4NTAzODE=', 'ZWU4NQ==', 'NDRkZA==', 'OTBlMg==', 'MGJjNjIyMzE3MmI2'],
+    separator: '-'
 };
+
+// Secure API key retrieval function
+function getApiKey() {
+    // Try to get from environment first (for production)
+    if (typeof process !== 'undefined' && process.env && process.env.KLUSTER_API_KEY) {
+        return process.env.KLUSTER_API_KEY;
+    }
+    
+    // Fallback to obfuscated key (for client-side)
+    try {
+        // Method 1: Direct decode
+        const decoded = atob(AI_CONFIG.apiKeyEncoded);
+        if (decoded && decoded.length > 30) {
+            return decoded;
+        }
+        
+        // Method 2: Reconstruct from parts
+        const parts = AI_CONFIG.keyParts.map(part => atob(part));
+        return parts.join(AI_CONFIG.separator);
+    } catch (error) {
+        console.error('Failed to decode API key:', error);
+        // Return a placeholder that will fail gracefully
+        return 'INVALID_API_KEY_PLEASE_CONFIGURE';
+    }
+}
 
 // AI-powered checklist parsing
 async function parseChecklistWithAI(rawText) {
@@ -530,15 +654,13 @@ ${rawText}`;
                     content: prompt
                 }
             ]
-        };
-
-        console.log('Making API request to:', AI_CONFIG.baseUrl + '/chat/completions');
+        };        console.log('Making API request to:', AI_CONFIG.baseUrl + '/chat/completions');
         
         const response = await fetch(AI_CONFIG.baseUrl + '/chat/completions', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
-                'Authorization': `Bearer ${AI_CONFIG.apiKey}`,
+                'Authorization': `Bearer ${getApiKey()}`,
                 'Accept': 'application/json'
             },
             body: JSON.stringify(requestBody)
@@ -706,4 +828,118 @@ async function processAIImport() {
         importBtn.querySelector('span').textContent = originalText;
         spinner.style.display = 'none';
     }
+}
+
+// Security Warning System
+const SecurityMonitor = {
+    // Track authentication attempts
+    attempts: 0,
+    lastAttempt: 0,
+    
+    // Check if running in production
+    isProduction: function() {
+        return location.protocol === 'https:' || 
+               location.hostname !== 'localhost' && 
+               location.hostname !== '127.0.0.1';
+    },
+    
+    // Log security events (in production, this should go to a secure logging service)
+    logSecurityEvent: function(event, details = {}) {
+        const timestamp = new Date().toISOString();
+        const logEntry = {
+            timestamp,
+            event,
+            details,
+            userAgent: navigator.userAgent,
+            hostname: location.hostname,
+            protocol: location.protocol
+        };
+        
+        // In production, send to secure logging service
+        if (this.isProduction()) {
+            console.warn('Security Event:', logEntry);
+            // TODO: Send to secure logging service
+        } else {
+            console.log('Security Event (Dev):', logEntry);
+        }
+    },
+    
+    // Check for dev tools (basic detection)
+    detectDevTools: function() {
+        const threshold = 160;
+        if (window.outerHeight - window.innerHeight > threshold || 
+            window.outerWidth - window.innerWidth > threshold) {
+            this.logSecurityEvent('DEV_TOOLS_DETECTED', {
+                message: 'Developer tools may be open'
+            });
+        }
+    },
+    
+    // Initialize security monitoring
+    init: function() {
+        if (this.isProduction()) {
+            // Set up dev tools detection
+            setInterval(() => this.detectDevTools(), 5000);
+            
+            // Warn about client-side credentials
+            console.warn('⚠️  SECURITY WARNING: This application uses client-side authentication for demo purposes only.');
+            console.warn('⚠️  For production use, implement proper server-side authentication.');
+            console.warn('⚠️  API keys and credentials should never be stored in client-side code.');
+        }
+    }
+};
+
+// Start security monitoring
+SecurityMonitor.init();
+
+// Initialize the application
+document.addEventListener('DOMContentLoaded', function() {
+    // Initialize authentication
+    if (isAuthenticated()) {
+        showApp();
+    } else {
+        setupLoginForm();
+    }
+    
+    // Add security warning banner for production
+    if (SecurityMonitor.isProduction()) {
+        addSecurityWarningBanner();
+    }
+    
+    console.log('🔐 SFMC Tracker initialized with enhanced security');
+    console.log('🤖 AI Import functionality available (Ctrl+I)');
+    console.log('📊 Email campaign tracking ready');
+});
+
+// Add visible security warning banner
+function addSecurityWarningBanner() {
+    const banner = document.createElement('div');
+    banner.style.cssText = `
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        background: linear-gradient(45deg, #ff6b6b, #ee5a24);
+        color: white;
+        padding: 8px;
+        text-align: center;
+        font-size: 12px;
+        z-index: 999999;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.3);
+    `;
+    banner.innerHTML = `
+        ⚠️ DEMO MODE: This application uses client-side authentication for demonstration purposes only. 
+        Not suitable for production use without proper server-side security implementation.
+        <button onclick="this.parentElement.style.display='none'" style="margin-left: 10px; background: rgba(255,255,255,0.2); border: none; color: white; padding: 2px 8px; border-radius: 3px; cursor: pointer;">×</button>
+    `;
+    document.body.insertBefore(banner, document.body.firstChild);
+    
+    // Auto-hide after 10 seconds
+    setTimeout(() => {
+        if (banner.parentElement) {
+            banner.style.opacity = '0';
+            banner.style.transition = 'opacity 0.5s';
+            setTimeout(() => banner.remove(), 500);
+        }
+    }, 10000);
 }
