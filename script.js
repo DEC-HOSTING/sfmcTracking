@@ -479,17 +479,22 @@ console.log('Ctrl+I: AI Import checklist');
 console.log('Escape: Close modals');
 
 // AI Configuration for Kluster AI with Mistral Nemo
+// Uses OpenAI client format with Kluster AI endpoint
+// Compatible with: from openai import OpenAI
 const AI_CONFIG = {
-    apiKey: '81b97b07-aa83-408e-aab3-e55ceb81b2a4',
+    apiKey: 'ea850381-ee85-44dd-90e2-0bc6223172b6', // Updated API key
     baseUrl: 'https://api.kluster.ai/v1',
     model: 'mistralai/Mistral-Nemo-Instruct-2407',
     maxTokens: 4000,
-    temperature: 0.2 // Lower temperature for more consistent parsing
+    temperature: 2,
+    topP: 1
 };
 
 // AI-powered checklist parsing
 async function parseChecklistWithAI(rawText) {
     try {
+        console.log('Starting AI parsing with Kluster AI...');
+        
         const prompt = `Parse the following email campaign checklist into a structured JSON format. Extract each section with its title, status information for Cathie and Malaurie, and action items. Return ONLY valid JSON with this structure:
 
 {
@@ -510,44 +515,89 @@ async function parseChecklistWithAI(rawText) {
 Checklist to parse:
 ${rawText}`;
 
+        const requestBody = {
+            model: AI_CONFIG.model,
+            max_completion_tokens: AI_CONFIG.maxTokens,
+            temperature: AI_CONFIG.temperature,
+            top_p: AI_CONFIG.topP,
+            messages: [
+                {
+                    role: 'system',
+                    content: 'You are an expert at parsing email campaign checklists. Always return valid JSON only, no explanations.'
+                },
+                {
+                    role: 'user',
+                    content: prompt
+                }
+            ]
+        };
+
+        console.log('Making API request to:', AI_CONFIG.baseUrl + '/chat/completions');
+        
         const response = await fetch(AI_CONFIG.baseUrl + '/chat/completions', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
-                'Authorization': `Bearer ${AI_CONFIG.apiKey}`
+                'Authorization': `Bearer ${AI_CONFIG.apiKey}`,
+                'Accept': 'application/json'
             },
-            body: JSON.stringify({
-                model: AI_CONFIG.model,
-                max_completion_tokens: AI_CONFIG.maxTokens,
-                temperature: AI_CONFIG.temperature,
-                top_p: 1,
-                messages: [
-                    {
-                        role: 'system',
-                        content: 'You are an expert at parsing email campaign checklists. Always return valid JSON only, no explanations.'
-                    },
-                    {
-                        role: 'user',
-                        content: prompt
-                    }
-                ]
-            })
+            body: JSON.stringify(requestBody)
         });
 
+        console.log('API Response status:', response.status);
+
         if (!response.ok) {
-            throw new Error(`AI API error: ${response.status}`);
+            const errorText = await response.text();
+            console.error('API Error Response:', errorText);
+            throw new Error(`AI API error: ${response.status} - ${errorText}`);
         }
 
         const data = await response.json();
-        const aiResponse = data.choices[0].message.content;
+        console.log('API Response data:', data);
         
-        // Try to parse the JSON response
-        const parsedData = JSON.parse(aiResponse);
+        if (!data.choices || !data.choices[0] || !data.choices[0].message) {
+            console.error('Invalid API response structure:', data);
+            throw new Error('Invalid API response format');
+        }
+        
+        const aiResponse = data.choices[0].message.content;
+        console.log('AI Response content:', aiResponse);
+        
+        // Clean up the response to extract JSON only
+        let jsonStart = aiResponse.indexOf('{');
+        let jsonEnd = aiResponse.lastIndexOf('}') + 1;
+        
+        if (jsonStart === -1 || jsonEnd === 0) {
+            console.error('No JSON found in response:', aiResponse);
+            throw new Error('No valid JSON found in AI response');
+        }
+        
+        const jsonString = aiResponse.substring(jsonStart, jsonEnd);
+        console.log('Extracted JSON:', jsonString);
+        
+        const parsedData = JSON.parse(jsonString);
+        
+        if (!parsedData.sections || !Array.isArray(parsedData.sections)) {
+            console.error('Invalid data structure:', parsedData);
+            throw new Error('Invalid data structure: missing sections array');
+        }
+        
+        console.log('Successfully parsed data:', parsedData);
         return parsedData;
         
     } catch (error) {
         console.error('AI parsing error:', error);
-        showNotification('AI parsing failed. Please check the format and try again.', 'error');
+        
+        if (error.message.includes('API error')) {
+            showNotification('AI service is unavailable. Please check your API key and try again.', 'error');
+        } else if (error.message.includes('JSON')) {
+            showNotification('AI parsing failed - invalid response format. Please try again.', 'error');
+        } else if (error.name === 'TypeError' && error.message.includes('fetch')) {
+            showNotification('Network error: Unable to connect to AI service. Please check your internet connection.', 'error');
+        } else {
+            showNotification(`AI parsing failed: ${error.message}`, 'error');
+        }
+        
         return null;
     }
 }
