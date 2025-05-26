@@ -1,0 +1,26 @@
+# Security files - NEVER commit these
+.env
+auth-config.js
+credentials.json
+
+# Node modules
+node_modules/
+npm-debug.log*
+
+# Build outputs
+dist/
+build/
+
+# IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+logs/

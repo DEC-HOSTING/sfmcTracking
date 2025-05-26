@@ -1,0 +1,324 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Email Campaign Action Tracker</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <!-- Login Screen -->
+    <div class="login-container" id="loginContainer">
+        <div class="login-form">
+            <div class="login-header">
+                <h1>🔐 Secure Access</h1>
+                <p>Email Campaign Action Tracker</p>
+            </div>
+            <form id="loginForm">
+                <div class="input-group">
+                    <label for="email">Email Address</label>
+                    <input type="email" id="email" required placeholder="Enter your email">
+                </div>
+                <div class="input-group">
+                    <label for="password">Password</label>
+                    <input type="password" id="password" required placeholder="Enter your password">
+                </div>                <button type="submit" class="login-btn">
+                    <span>Access Tracker</span>
+                    <div class="login-spinner" style="display: none;"></div>
+                </button>
+                <div class="error-message" id="errorMessage" style="display: none;"></div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Main App Container -->
+    <div class="app-container" id="appContainer" style="display: none;">
+        <div class="container">        <header>
+            <h1>Email Campaign Action Tracker</h1>
+            <p>Track action items and send updates to thomas.nicoli@loreal.com</p>
+            <button class="logout-btn" onclick="logout()">Logout</button>
+        </header>
+
+        <div class="progress-bar">
+            <div class="progress-fill" id="progressFill"></div>
+            <span class="progress-text" id="progressText">0% Complete</span>
+        </div>
+
+        <!-- Fun Animated CTA Button -->
+        <div class="email-cta-container" id="emailCtaContainer" style="display: none;">
+            <div class="email-cta" id="emailCta">
+                <div class="cta-icon">📧</div>
+                <div class="cta-content">
+                    <h3>Ready to send updates?</h3>
+                    <p id="ctaText">You have completed actions ready to be reported!</p>                    <button class="cta-button" onclick="sendBatchEmail()">
+                        <span>Send Email Update</span>
+                        <div class="cta-spinner" style="display: none;"></div>
+                    </button>
+                </div>
+                <button class="cta-close" onclick="hideEmailCta()">×</button>
+            </div>
+        </div>
+
+        <div class="action-items">
+            <!-- Newsletter Confirmation / Newsletter Subscription -->
+            <div class="action-section">
+                <h2>1. Newsletter Confirmation / Newsletter Subscription</h2>
+                <div class="status">
+                    <span class="status-item cathie">Cathie: NO-GO (Issue: Space between texts)</span>
+                    <span class="status-item malaurie">Malaurie: NO-GO</span>
+                </div>
+                <div class="actions">
+                    <label class="action-item">
+                        <input type="checkbox" data-item="1" data-action="spacing"> 
+                        Adjust spacing between text blocks
+                    </label>
+                    <label class="action-item">
+                        <input type="checkbox" data-item="1" data-action="uppercase"> 
+                        Change all uppercase text to lowercase
+                    </label>
+                    <label class="action-item">
+                        <input type="checkbox" data-item="1" data-action="outlook-link"> 
+                        Fix Outlook rendering to ensure link appears in black (not blue)
+                    </label>
+                    <label class="action-item">
+                        <input type="checkbox" data-item="1" data-action="footer"> 
+                        Update footer to "Votre fidélité est récompensée"
+                    </label>
+                </div>
+            </div>
+
+            <!-- Welcome / Create an Account -->
+            <div class="action-section">
+                <h2>2. Welcome / Create an Account</h2>
+                <div class="status">
+                    <span class="status-item cathie">Cathie: GO (No action needed)</span>
+                    <span class="status-item malaurie">Malaurie: NO-GO (Spacing issue)</span>
+                </div>
+                <div class="actions">
+                    <label class="action-item">
+                        <input type="checkbox" data-item="2" data-action="spacing"> 
+                        Adjust text spacing
+                    </label>
+                    <label class="action-item">
+                        <input type="checkbox" data-item="2" data-action="uppercase"> 
+                        Change all uppercase text to lowercase
+                    </label>
+                    <label class="action-item">
+                        <input type="checkbox" data-item="2" data-action="outlook-link"> 
+                        Fix Outlook rendering for link color
+                    </label>
+                    <label class="action-item">
+                        <input type="checkbox" data-item="2" data-action="footer"> 
+                        Update footer to "Votre fidélité est récompensée"
+                    </label>
+                </div>
+            </div>
+
+            <!-- Update Account Information -->
+            <div class="action-section">
+                <h2>3. Update Account Information</h2>
+                <div class="status">
+                    <span class="status-item cathie">Cathie: NO-GO ("null" appears instead of email)</span>
+                    <span class="status-item malaurie">Malaurie: DONE (Should be the email instead of "Null")</span>
+                </div>
+                <div class="actions">
+                    <label class="action-item">
+                        <input type="checkbox" data-item="3" data-action="null-fix"> 
+                        Ensure updated email address appears correctly in trigger; "null" should never be shown
+                    </label>
+                </div>
+            </div>
+
+            <!-- Password Reset -->
+            <div class="action-section">
+                <h2>4. Password Reset</h2>
+                <div class="status">
+                    <span class="status-item cathie">Cathie: NO-GO (Not received)</span>
+                    <span class="status-item malaurie">Malaurie: NO-GO</span>
+                </div>
+                <div class="actions">
+                    <label class="action-item">
+                        <input type="checkbox" data-item="4" data-action="investigate"> 
+                        Investigate why the password reset email was not received
+                    </label>
+                    <label class="action-item">
+                        <input type="checkbox" data-item="4" data-action="uppercase"> 
+                        Change all uppercase text to lowercase
+                    </label>
+                    <label class="action-item">
+                        <input type="checkbox" data-item="4" data-action="outlook-link"> 
+                        Fix link color in Outlook
+                    </label>
+                    <label class="action-item">
+                        <input type="checkbox" data-item="4" data-action="footer"> 
+                        Update footer to "Votre fidélité est récompensée"
+                    </label>
+                </div>
+            </div>
+
+            <!-- Password Set -->
+            <div class="action-section">
+                <h2>5. Password Set</h2>
+                <div class="status">
+                    <span class="status-item cathie">Cathie: GO</span>
+                    <span class="status-item malaurie">Malaurie: NO-GO</span>
+                </div>
+                <div class="actions">
+                    <label class="action-item">
+                        <input type="checkbox" data-item="5" data-action="uppercase"> 
+                        Change all uppercase text to lowercase
+                    </label>
+                    <label class="action-item">
+                        <input type="checkbox" data-item="5" data-action="outlook-link"> 
+                        Fix link color in Outlook
+                    </label>
+                    <label class="action-item">
+                        <input type="checkbox" data-item="5" data-action="null-fix"> 
+                        Ensure new email address displays, never "null"
+                    </label>
+                    <label class="action-item">
+                        <input type="checkbox" data-item="5" data-action="footer"> 
+                        Update footer to "Votre fidélité est récompensée"
+                    </label>
+                </div>
+            </div>
+
+            <!-- Delete Account -->
+            <div class="action-section">
+                <h2>6. Delete Account</h2>
+                <div class="status">
+                    <span class="status-item cathie">Cathie: GO</span>
+                    <span class="status-item malaurie">Malaurie: NO-GO (Footer issue)</span>
+                </div>
+                <div class="actions">
+                    <label class="action-item">
+                        <input type="checkbox" data-item="6" data-action="footer"> 
+                        Update footer to "Votre fidélité est récompensée"
+                    </label>
+                </div>
+            </div>
+
+            <!-- Order Confirmation -->
+            <div class="action-section">
+                <h2>7. Order Confirmation</h2>
+                <div class="status">
+                    <span class="status-item cathie">Cathie: GO (Order #MUG0560376)</span>
+                    <span class="status-item malaurie">Malaurie: NO-GO</span>
+                </div>
+                <div class="actions">
+                    <label class="action-item">
+                        <input type="checkbox" data-item="7" data-action="uppercase"> 
+                        Change all uppercase text to lowercase
+                    </label>
+                    <label class="action-item">
+                        <input type="checkbox" data-item="7" data-action="outlook-link"> 
+                        Fix link color in Outlook
+                    </label>
+                    <label class="action-item">
+                        <input type="checkbox" data-item="7" data-action="footer"> 
+                        Update footer to "Votre fidélité est récompensée"
+                    </label>
+                </div>
+            </div>
+
+            <!-- Order Cancel -->
+            <div class="action-section">
+                <h2>8. Order Cancel</h2>
+                <div class="status">
+                    <span class="status-item cathie">Cathie: GO (Automatic, no action)</span>
+                    <span class="status-item malaurie">Malaurie: Waiting for test email (#MUG0560377), marked as done after reception</span>
+                </div>
+                <div class="actions">
+                    <label class="action-item">
+                        <input type="checkbox" data-item="8" data-action="monitor"> 
+                        No further action needed unless issues arise upon next test
+                    </label>
+                </div>
+            </div>
+
+            <!-- Notify Me Confirmation -->
+            <div class="action-section">
+                <h2>9. Notify Me Confirmation</h2>
+                <div class="status">
+                    <span class="status-item cathie">Cathie: GO (Tested with ALIEN HYPERSENSE)</span>
+                    <span class="status-item malaurie">Malaurie: NO-GO</span>
+                </div>
+                <div class="actions">
+                    <label class="action-item">
+                        <input type="checkbox" data-item="9" data-action="uppercase"> 
+                        Change all uppercase text to lowercase
+                    </label>
+                    <label class="action-item">
+                        <input type="checkbox" data-item="9" data-action="outlook-link"> 
+                        Fix link color in Outlook
+                    </label>
+                    <label class="action-item">
+                        <input type="checkbox" data-item="9" data-action="footer"> 
+                        Update footer to "Votre fidélité est récompensée"
+                    </label>
+                    <label class="action-item">
+                        <input type="checkbox" data-item="9" data-action="image-resize"> 
+                        Resize/enlarge product image
+                    </label>
+                </div>
+            </div>
+
+            <!-- Restock Notification -->
+            <div class="action-section">
+                <h2>10. Restock Notification</h2>
+                <div class="status">
+                    <span class="status-item cathie">Cathie: GO (Automatic, no action)</span>
+                    <span class="status-item malaurie">Malaurie: Waiting for test email, marked as done</span>
+                </div>
+                <div class="actions">
+                    <label class="action-item">
+                        <input type="checkbox" data-item="10" data-action="monitor"> 
+                        No further action needed unless issues arise upon next test
+                    </label>
+                </div>
+            </div>
+
+            <!-- General Footers -->
+            <div class="action-section">
+                <h2>11. General Footers</h2>
+                <div class="status">
+                    <span class="status-item malaurie">Malaurie: All footers: Text should be "Votre fidélité est récompensée"; all uppercase to be removed</span>
+                </div>
+                <div class="actions">
+                    <label class="action-item">
+                        <input type="checkbox" data-item="11" data-action="footer-consistency"> 
+                        Ensure ALL trigger templates have consistent footers, with correct text and no uppercase
+                    </label>
+                </div>
+            </div>
+        </div>
+
+        <div class="summary">
+            <h2>Summary</h2>
+            <div class="summary-stats">
+                <div class="stat">
+                    <span class="stat-number" id="totalActions">0</span>
+                    <span class="stat-label">Total Actions</span>
+                </div>
+                <div class="stat">
+                    <span class="stat-number" id="completedActions">0</span>
+                    <span class="stat-label">Completed</span>
+                </div>
+                <div class="stat">
+                    <span class="stat-number" id="remainingActions">0</span>                <span class="stat-label">Remaining</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="notification" id="notification" style="display: none;">
+            <div class="notification-content">
+                <span id="notificationText"></span>
+                <button onclick="closeNotification()">×</button>
+            </div>
+        </div>
+    </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
