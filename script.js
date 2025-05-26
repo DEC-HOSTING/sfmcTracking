@@ -893,18 +893,17 @@ const SecurityMonitor = {
 SecurityMonitor.init();
 
 // Initialize the application
-document.addEventListener('DOMContentLoaded', function() {
-    // Initialize authentication
+document.addEventListener('DOMContentLoaded', function() {    // Initialize authentication
     if (isAuthenticated()) {
         showApp();
     } else {
         setupLoginForm();
     }
     
-    // Add security warning banner for production
-    if (SecurityMonitor.isProduction()) {
-        addSecurityWarningBanner();
-    }
+    // Security warning banner disabled for cleaner UI
+    // if (SecurityMonitor.isProduction()) {
+    //     addSecurityWarningBanner();
+    // }
     
     console.log('🔐 SFMC Tracker initialized with enhanced security');
     console.log('🤖 AI Import functionality available (Ctrl+I)');
