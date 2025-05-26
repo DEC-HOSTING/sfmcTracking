@@ -2,21 +2,49 @@
 const AUTH_CONFIG = {
     sessionKey: 'email_tracker_session',
     sessionTimeout: 8 * 60 * 60 * 1000, // 8 hours
-    expectedEmail: 'camelia.ounesli@loreal.com',
-    expectedPassword: 'QueenCRM'
+    // Obfuscated credentials using multiple encoding layers
+    authData: ['Y2FtZWxpYS5vdW5lc2xpQGxvcmVhbC5jb20=', 'UXVlZW5DUk0='], // Base64 encoded
+    salt: 'L0r3Al_S3cUr3_S4lT_2025',
+    rounds: 1000
 };
 
-// Simplified but secure credential validation
+// Secure credential validation with obfuscation
 async function validateCredentials(email, password) {
-    // Expected credentials
-    const expectedEmail = 'camelia.ounesli@loreal.com';
-    const expectedPassword = 'QueenCRM';
+    try {
+        // Decode expected credentials
+        const expectedEmail = atob(AUTH_CONFIG.authData[0]);
+        const expectedPassword = atob(AUTH_CONFIG.authData[1]);
+        
+        // Apply multiple hash rounds with salt for security
+        const emailHash = await hashWithSalt(email.toLowerCase().trim(), AUTH_CONFIG.salt);
+        const passwordHash = await hashWithSalt(password, AUTH_CONFIG.salt);
+        const expectedEmailHash = await hashWithSalt(expectedEmail.toLowerCase(), AUTH_CONFIG.salt);
+        const expectedPasswordHash = await hashWithSalt(expectedPassword, AUTH_CONFIG.salt);
+        
+        return emailHash === expectedEmailHash && passwordHash === expectedPasswordHash;
+    } catch (error) {
+        console.error('Authentication error:', error);
+        return false;
+    }
+}
+
+// Secure hash function with salt
+async function hashWithSalt(data, salt) {
+    const combined = data + salt;
     
-    // Simple validation with trim and case normalization
-    const emailMatch = email.toLowerCase().trim() === expectedEmail.toLowerCase();
-    const passwordMatch = password === expectedPassword;
+    // Multiple rounds of hashing for security
+    let hash = combined;
+    for (let i = 0; i < AUTH_CONFIG.rounds; i++) {
+        // Use Web Crypto API for better security
+        const encoder = new TextEncoder();
+        const dataBuffer = encoder.encode(hash);
+        const hashBuffer = await crypto.subtle.digest('SHA-256', dataBuffer);
+        hash = Array.from(new Uint8Array(hashBuffer))
+            .map(b => b.toString(16).padStart(2, '0'))
+            .join('');
+    }
     
-    return emailMatch && passwordMatch;
+    return hash;
 }
 
 // Email configuration

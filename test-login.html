@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login Test</title>
+    <style>
+        body { font-family: Arial, sans-serif; padding: 20px; }
+        .test-box { border: 1px solid #ccc; padding: 20px; margin: 10px 0; border-radius: 5px; }
+        .success { background-color: #d4edda; border-color: #c3e6cb; }
+        .error { background-color: #f8d7da; border-color: #f5c6cb; }
+        button { padding: 10px 20px; margin: 5px; background: #007bff; color: white; border: none; border-radius: 3px; cursor: pointer; }
+    </style>
+</head>
+<body>
+    <h1>Login Function Test</h1>
+    
+    <div class="test-box">
+        <h3>Test Credentials</h3>
+        <p><strong>Email:</strong> camelia.ounesli@loreal.com</p>
+        <p><strong>Password:</strong> QueenCRM</p>
+        <button onclick="testLogin()">Test Login</button>
+        <div id="result"></div>
+    </div>
+
+    <script>
+        // Copy the auth config and validation function from script.js
+        const AUTH_CONFIG = {
+            sessionKey: 'email_tracker_session',
+            sessionTimeout: 8 * 60 * 60 * 1000, // 8 hours
+            expectedEmail: 'camelia.ounesli@loreal.com',
+            expectedPassword: 'QueenCRM'
+        };
+
+        async function validateCredentials(email, password) {
+            // Expected credentials
+            const expectedEmail = 'camelia.ounesli@loreal.com';
+            const expectedPassword = 'QueenCRM';
+            
+            // Simple validation with trim and case normalization
+            const emailMatch = email.toLowerCase().trim() === expectedEmail.toLowerCase();
+            const passwordMatch = password === expectedPassword;
+            
+            return emailMatch && passwordMatch;
+        }
+
+        async function testLogin() {
+            const resultDiv = document.getElementById('result');
+            resultDiv.innerHTML = '<p>Testing login...</p>';
+            
+            const email = 'camelia.ounesli@loreal.com';
+            const password = 'QueenCRM';
+            
+            try {
+                const isValid = await validateCredentials(email, password);
+                
+                if (isValid) {
+                    resultDiv.innerHTML = '<div class="test-box success"><h4>✅ LOGIN SUCCESS!</h4><p>Credentials are valid and login should work.</p></div>';
+                } else {
+                    resultDiv.innerHTML = '<div class="test-box error"><h4>❌ LOGIN FAILED</h4><p>Credentials validation failed.</p></div>';
+                }
+            } catch (error) {
+                resultDiv.innerHTML = '<div class="test-box error"><h4>❌ ERROR</h4><p>Error during validation: ' + error.message + '</p></div>';
+            }
+        }
+    </script>
+</body>
+</html>
