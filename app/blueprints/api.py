@@ -41,15 +41,16 @@ def chat():
                 "success": False,
                 "message": "Message cannot be empty."
             }), 400
-        
-        # Save user message
+          # Save user message
         user_msg = Message(
             user_id=current_user.id,
             role='user',
             content=user_message
         )
         db.session.add(user_msg)
-          # Prepare messages for AI
+        db.session.flush()  # Ensure user message is saved before continuing
+        
+        # Prepare messages for AI
         recent_messages = Message.query.filter_by(user_id=current_user.id)\
                                      .order_by(Message.timestamp.desc())\
                                      .limit(10).all()
@@ -92,18 +93,22 @@ def chat():
             
             created_tasks = []
             created_categories = []
-            
-            # Check if user wants task generation
+              # Check if user wants task generation
             if data.get('generate_tasks', False):
-                task_response = AIService.generate_tasks(user_message)
-                if task_response["success"]:
-                    try:
-                        task_data = json.loads(task_response["message"])
-                        # create_tasks_from_ai will now let exceptions propagate
-                        created_tasks, created_categories = create_tasks_from_ai(task_data)
-                    except json.JSONDecodeError as e: # Catch only JSON parsing errors here
-                        logger.warning(f"Failed to parse task generation JSON: {e}")
+                try:
+                    task_response = AIService.generate_tasks(user_message)
+                    if task_response["success"]:
+                        try:
+                            task_data = json.loads(task_response["message"])
+                            created_tasks, created_categories = create_tasks_from_ai(task_data)
+                        except json.JSONDecodeError as json_error:
+                            logger.warning(f"Failed to parse task generation JSON: {json_error}")
+                            # Continue without task generation
+                except Exception as task_error:
+                    logger.error(f"Task generation failed: {str(task_error)}")
+                    # Continue without task generation - don't let this break the chat
             
+            # Only commit if everything succeeded
             db.session.commit()
             
             return jsonify({
@@ -134,49 +139,53 @@ def create_tasks_from_ai(task_data):
     created_categories = []
     created_tasks = []
     
-    # Removed top-level try-except block to let exceptions propagate
-    # Create categories first
-    if 'categories' in task_data:
-        for cat_data in task_data['categories']:
-            existing_cat = Category.query.filter_by(
-                name=cat_data['name'], 
-                user_id=current_user.id
-            ).first()
-            
-            if not existing_cat:
-                new_category = Category(
-                    name=cat_data['name'],
-                    color=cat_data.get('color', '#000000'),
-                    user_id=current_user.id
-                )
-                db.session.add(new_category)
-                db.session.flush()  # Get ID
-                created_categories.append(new_category)
-    
-    # Create tasks
-    if 'tasks' in task_data:
-        for task_data_item in task_data['tasks']:
-            # Find category
-            category = None
-            if 'category_name' in task_data_item:
-                category = Category.query.filter_by(
-                    name=task_data_item['category_name'],
+    try:
+        # Create categories first
+        if 'categories' in task_data:
+            for cat_data in task_data['categories']:
+                existing_cat = Category.query.filter_by(
+                    name=cat_data['name'], 
                     user_id=current_user.id
                 ).first()
-            
-            new_task = Task(
-                title=task_data_item['title'],
-                description=task_data_item.get('description', ''),
-                priority=task_data_item.get('priority', 'medium'),
-                category_id=category.id if category else None,
-                user_id=current_user.id
-            )
-            db.session.add(new_task)
-            created_tasks.append(new_task)
-    
-    return created_tasks, created_categories
-    # Removed the original try-except block that would catch all exceptions,
-    # log them, and return [], []. Now, database errors will propagate.
+                
+                if not existing_cat:
+                    new_category = Category(
+                        name=cat_data['name'],
+                        color=cat_data.get('color', '#000000'),
+                        user_id=current_user.id
+                    )
+                    db.session.add(new_category)
+                    db.session.flush()  # Get ID immediately
+                    created_categories.append(new_category)
+        
+        # Create tasks
+        if 'tasks' in task_data:
+            for task_data_item in task_data['tasks']:
+                # Find category
+                category = None
+                if 'category_name' in task_data_item:
+                    category = Category.query.filter_by(
+                        name=task_data_item['category_name'],
+                        user_id=current_user.id
+                    ).first()
+                
+                new_task = Task(
+                    title=task_data_item['title'],
+                    description=task_data_item.get('description', ''),
+                    priority=task_data_item.get('priority', 'medium'),
+                    category_id=category.id if category else None,
+                    user_id=current_user.id
+                )
+                db.session.add(new_task)
+                created_tasks.append(new_task)
+        
+        return created_tasks, created_categories
+        
+    except Exception as e:
+        logger.error(f"Error creating tasks from AI data: {str(e)}")
+        logger.error(traceback.format_exc())
+        # Don't rollback here - let the calling function handle it
+        raise  # Re-raise the exception for the calling function to handle
 
 # Task Endpoints
 @api_bp.route('/tasks', methods=['GET'])
@@ -184,13 +193,22 @@ def create_tasks_from_ai(task_data):
 def get_tasks():
     """Get all tasks for the current user"""
     try:
-        tasks = Task.query.filter_by(user_id=current_user.id).all()
+        logger.debug(f"Getting tasks for user {current_user.id}")
+        category_id = request.args.get('category')
+        
+        if category_id:
+            tasks = Task.query.filter_by(user_id=current_user.id, category_id=category_id).all()
+        else:
+            tasks = Task.query.filter_by(user_id=current_user.id).all()
+            
+        logger.debug(f"Successfully retrieved {len(tasks)} tasks")
         return jsonify({
             "success": True,
             "tasks": [task.to_dict() for task in tasks]
         })
     except Exception as e:
-        logger.error(f"Get tasks error: {str(e)}")
+        logger.error(f"Get tasks error for user {current_user.id}: {str(e)}")
+        logger.error(traceback.format_exc())
         return jsonify({
             "success": False,
             "message": "Failed to load tasks"
@@ -318,6 +336,7 @@ def delete_task(task_id):
 def get_categories():
     """Get all categories for the current user"""
     try:
+        logger.debug(f"Getting categories for user {current_user.id}")
         categories = Category.query.filter_by(user_id=current_user.id).all()
         
         # Add task counts
@@ -328,12 +347,14 @@ def get_categories():
             cat_dict['completed_count'] = Task.query.filter_by(category_id=category.id, done=True).count()
             categories_with_counts.append(cat_dict)
         
+        logger.debug(f"Successfully retrieved {len(categories_with_counts)} categories")
         return jsonify({
             "success": True,
             "categories": categories_with_counts
         })
     except Exception as e:
-        logger.error(f"Get categories error: {str(e)}")
+        logger.error(f"Get categories error for user {current_user.id}: {str(e)}")
+        logger.error(traceback.format_exc())
         return jsonify({
             "success": False,
             "message": "Failed to load categories"

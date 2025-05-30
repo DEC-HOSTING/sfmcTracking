@@ -1,0 +1,473 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Chat Assistant - Kluster Mistral-Nemo</title>
+    
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- Modern CSS Framework -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/modern-framework.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/components.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/chat.css') }}">
+    
+    <!-- SEO Meta Tags -->
+    <meta name="description" content="Modern AI chat interface powered by Kluster AI's Mistral-Nemo-Instruct-2407">
+    <meta name="theme-color" content="#000000">
+    
+    <!-- Preload critical resources -->
+    <link rel="preload" href="{{ url_for('static', filename='js/modern-ui.js') }}" as="script">
+</head>
+<body class="min-h-screen">
+    <!-- Navigation Bar -->
+    <nav class="navbar" id="navbar">
+        <div class="navbar-container">
+            <a href="/" class="navbar-brand">Kluster AI</a>
+            <ul class="navbar-nav">
+                <li><a href="#features">Features</a></li>
+                <li><a href="#about">About</a></li>
+                <li><a href="/api/health">Status</a></li>
+            </ul>
+        </div>
+    </nav>
+
+    <!-- Main Chat Application -->
+    <main class="chat-app" id="chat-app">
+        <div class="chat-container reveal">
+            <!-- Chat Header -->
+            <header class="chat-header">
+                <h1 class="chat-title">AI Chat Assistant</h1>
+                <p class="chat-subtitle">
+                    <span class="status-indicator" aria-label="Online"></span>
+                    Powered by Kluster AI's Mistral-Nemo-Instruct-2407
+                </p>
+            </header>            <!-- Chat Messages Area -->
+            <section class="chat-messages" id="chat-messages" role="log" aria-label="Chat conversation">
+                <!-- Empty State -->
+                <div class="chat-empty" id="chat-empty">
+                    <div class="chat-empty-icon" aria-hidden="true">
+                        <svg viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <circle cx="50" cy="50" r="40" stroke="currentColor" stroke-width="2" fill="none"/>
+                            <path d="M30 60 Q50 40 70 60" stroke="currentColor" stroke-width="2" fill="none"/>
+                            <circle cx="35" cy="45" r="3" fill="currentColor"/>
+                            <circle cx="65" cy="45" r="3" fill="currentColor"/>
+                        </svg>
+                    </div>
+                    <h2 class="chat-empty-title">Welcome to AI Chat</h2>
+                    <p class="chat-empty-description">
+                        Start a conversation with our advanced AI assistant. Ask questions, get help with tasks, or just have a friendly chat!
+                    </p>
+                    <div class="chat-suggestions">
+                        <button class="suggestion-chip" type="button">Help me organize my tasks</button>
+                        <button class="suggestion-chip" type="button">Explain a complex topic</button>
+                        <button class="suggestion-chip" type="button">Write a creative story</button>
+                        <button class="suggestion-chip" type="button">Solve a problem</button>
+                    </div>
+                </div>
+            </section>            <!-- Chat Input Container -->
+            <footer class="chat-input-container">
+                <form class="chat-input-form" id="chat-form" onsubmit="return false;">
+                    <div class="chat-input-wrapper">
+                        <textarea 
+                            id="chat-input" 
+                            class="chat-input" 
+                            placeholder="Type your message here... (Press Enter to send, Shift+Enter for new line)"
+                            rows="1"
+                            maxlength="2000"
+                            aria-label="Chat message input"
+                            required
+                        ></textarea>
+                        <div class="input-actions">
+                            <button 
+                                type="submit" 
+                                id="send-button" 
+                                class="send-button btn-icon" 
+                                aria-label="Send message"
+                                disabled
+                            >
+                                <svg class="send-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                    <path d="M2 21L23 12L2 3V10L17 12L2 14V21Z" fill="currentColor"/>
+                                </svg>
+                            </button>
+                        </div>
+                    </div>
+                </form>
+                
+                <!-- Character count -->
+                <div class="flex justify-between items-center mt-2 text-xs text-gray-500">
+                    <span id="char-count">0 / 2000</span>
+                    <span class="flex items-center gap-2">
+                        <kbd class="px-2 py-1 bg-gray-100 rounded text-xs">Enter</kbd> to send
+                        <kbd class="px-2 py-1 bg-gray-100 rounded text-xs">Shift+Enter</kbd> for new line
+                    </span>
+                </div>
+            </footer>
+        </div>
+    </main>
+
+    <!-- Alert Container for inline notifications -->
+    <div id="alert-container" class="fixed top-20 left-1/2 transform -translate-x-1/2 z-50 w-full max-w-md px-4">
+        <!-- Alerts will be dynamically inserted here -->
+    </div>
+
+    <!-- JavaScript -->
+    <script src="{{ url_for('static', filename='js/modern-ui.js') }}"></script>
+    
+    <!-- Enhanced Chat Functionality -->
+    <script>
+        // Character counter
+        document.addEventListener('DOMContentLoaded', function() {
+            const chatInput = document.getElementById('chat-input');
+            const charCount = document.getElementById('char-count');
+            const chatEmpty = document.getElementById('chat-empty');
+            
+            if (chatInput && charCount) {
+                chatInput.addEventListener('input', function() {
+                    const count = this.value.length;
+                    charCount.textContent = `${count} / 2000`;
+                    
+                    if (count > 1800) {
+                        charCount.classList.add('text-error');
+                    } else if (count > 1500) {
+                        charCount.classList.add('text-warning');
+                        charCount.classList.remove('text-error');
+                    } else {
+                        charCount.classList.remove('text-error', 'text-warning');
+                    }
+                });
+            }
+            
+            // Hide empty state when first message is sent
+            const observer = new MutationObserver(function(mutations) {
+                mutations.forEach(function(mutation) {
+                    if (mutation.addedNodes.length > 0) {
+                        const hasMessages = document.querySelectorAll('.message').length > 0;
+                        if (hasMessages && chatEmpty) {
+                            chatEmpty.style.display = 'none';
+                        }
+                    }
+                });
+            });
+            
+            const messagesContainer = document.getElementById('chat-messages');
+            if (messagesContainer) {
+                observer.observe(messagesContainer, { childList: true });
+            }
+            
+            // Scroll indicator for navbar
+            let scrollTimer = null;
+            window.addEventListener('scroll', function() {
+                const navbar = document.getElementById('navbar');
+                if (navbar) {
+                    if (window.scrollY > 50) {
+                        navbar.classList.add('scrolled');
+                    } else {
+                        navbar.classList.remove('scrolled');
+                    }
+                }
+                
+                // Clear timer
+                if (scrollTimer !== null) {
+                    clearTimeout(scrollTimer);
+                }
+            });
+            
+            // Performance monitoring
+            console.log('🚀 Chat interface loaded in', performance.now().toFixed(2) + 'ms');
+            
+            // Analytics (placeholder)
+            if (typeof gtag !== 'undefined') {
+                gtag('event', 'page_view', {
+                    page_title: 'AI Chat Interface',
+                    page_location: window.location.href
+                });
+            }
+        });
+    </script>
+    
+    <!-- Service Worker for PWA capabilities (optional) -->
+    <script>
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', function() {
+                navigator.serviceWorker.register('/static/sw.js')
+                    .then(function(registration) {
+                        console.log('💾 ServiceWorker registered successfully');
+                    })
+                    .catch(function(error) {
+                        console.log('ServiceWorker registration failed:', error);
+                    });
+            });
+        }
+    </script>
+</body>
+</html>
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .typing-indicator {
+            display: none;
+            margin-bottom: 20px;
+        }
+
+        .typing-indicator.show {
+            display: block;
+        }
+
+        .typing-dots {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 12px 16px;
+            background: white;
+            border: 1px solid #e0e0e0;
+            border-radius: 18px;
+            max-width: 100px;
+        }
+
+        .typing-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #764ba2;
+            animation: typing 1.4s infinite ease-in-out;
+        }
+
+        .typing-dot:nth-child(2) {
+            animation-delay: 0.2s;
+        }
+
+        .typing-dot:nth-child(3) {
+            animation-delay: 0.4s;
+        }
+
+        @keyframes typing {
+            0%, 60%, 100% {
+                transform: translateY(0);
+            }
+            30% {
+                transform: translateY(-10px);
+            }
+        }
+
+        .error-message {
+            background: #ffe6e6;
+            color: #d32f2f;
+            padding: 10px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            border-left: 4px solid #d32f2f;
+        }
+
+        .welcome-message {
+            background: #e3f2fd;
+            color: #1976d2;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            border-left: 4px solid #1976d2;
+        }
+
+        @media (max-width: 768px) {
+            .chat-container {
+                height: 100vh;
+                border-radius: 0;
+                max-width: none;
+            }
+
+            .message-content {
+                max-width: 85%;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="chat-container">
+        <div class="chat-header">
+            <h1>🤖 AI Chat Assistant</h1>
+            <p>Powered by Kluster AI • Mistral-Nemo-Instruct-2407</p>
+        </div>
+
+        <div class="chat-messages" id="chatMessages">
+            <div class="welcome-message">
+                👋 Welcome! I'm your AI assistant powered by Mistral-Nemo. I can help you with organizing lists, answering questions, and general conversation. How can I assist you today?
+            </div>
+        </div>
+
+        <div class="typing-indicator" id="typingIndicator">
+            <div class="message assistant">
+                <div class="message-avatar">🤖</div>
+                <div class="typing-dots">
+                    <div class="typing-dot"></div>
+                    <div class="typing-dot"></div>
+                    <div class="typing-dot"></div>
+                </div>
+            </div>
+        </div>
+
+        <div class="chat-input-container">
+            <form class="chat-input-form" id="chatForm">
+                <input 
+                    type="text" 
+                    class="chat-input" 
+                    id="chatInput" 
+                    placeholder="Type your message here..." 
+                    autocomplete="off"
+                    maxlength="1000"
+                >
+                <button type="submit" class="send-button" id="sendButton">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <line x1="22" y1="2" x2="11" y2="13"></line>
+                        <polygon points="22,2 15,22 11,13 2,9"></polygon>
+                    </svg>
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        class ChatApp {
+            constructor() {
+                this.chatMessages = document.getElementById('chatMessages');
+                this.chatForm = document.getElementById('chatForm');
+                this.chatInput = document.getElementById('chatInput');
+                this.sendButton = document.getElementById('sendButton');
+                this.typingIndicator = document.getElementById('typingIndicator');
+                
+                this.conversationHistory = [];
+                this.isWaiting = false;
+                
+                this.init();
+            }
+            
+            init() {
+                this.chatForm.addEventListener('submit', (e) => this.handleSubmit(e));
+                this.chatInput.addEventListener('keydown', (e) => {
+                    if (e.key === 'Enter' && !e.shiftKey) {
+                        e.preventDefault();
+                        this.chatForm.dispatchEvent(new Event('submit'));
+                    }
+                });
+            }
+            
+            async handleSubmit(e) {
+                e.preventDefault();
+                
+                if (this.isWaiting) return;
+                
+                const message = this.chatInput.value.trim();
+                if (!message) return;
+                
+                // Add user message to chat
+                this.addMessage(message, 'user');
+                this.conversationHistory.push({ role: 'user', content: message });
+                
+                // Clear input and disable form
+                this.chatInput.value = '';
+                this.setWaiting(true);
+                
+                try {
+                    // Send to API
+                    const response = await this.sendChatRequest(this.conversationHistory);
+                    
+                    if (response.success) {
+                        this.addMessage(response.message, 'assistant');
+                        this.conversationHistory.push({ role: 'assistant', content: response.message });
+                    } else {
+                        this.showError(response.message || 'Failed to get response from AI');
+                    }
+                } catch (error) {
+                    console.error('Chat error:', error);
+                    this.showError('Network error. Please check your connection and try again.');
+                } finally {
+                    this.setWaiting(false);
+                }
+            }
+              async sendChatRequest(messages) {
+                const response = await fetch('/api/chat', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ messages: messages })
+                });
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+                
+                return await response.json();
+            }
+            
+            addMessage(content, role) {
+                const messageDiv = document.createElement('div');
+                messageDiv.className = `message ${role}`;
+                
+                const avatar = role === 'user' ? '👤' : '🤖';
+                
+                messageDiv.innerHTML = `
+                    <div class="message-avatar">${avatar}</div>
+                    <div class="message-content">${this.formatMessage(content)}</div>
+                `;
+                
+                this.chatMessages.appendChild(messageDiv);
+                this.scrollToBottom();
+            }
+            
+            formatMessage(content) {
+                // Basic formatting for better readability
+                return content
+                    .replace(/\n/g, '<br>')
+                    .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+                    .replace(/\*(.*?)\*/g, '<em>$1</em>');
+            }
+            
+            showError(message) {
+                const errorDiv = document.createElement('div');
+                errorDiv.className = 'error-message';
+                errorDiv.textContent = `Error: ${message}`;
+                
+                this.chatMessages.appendChild(errorDiv);
+                this.scrollToBottom();
+                
+                // Remove error after 5 seconds
+                setTimeout(() => {
+                    if (errorDiv.parentNode) {
+                        errorDiv.parentNode.removeChild(errorDiv);
+                    }
+                }, 5000);
+            }
+            
+            setWaiting(waiting) {
+                this.isWaiting = waiting;
+                this.sendButton.disabled = waiting;
+                this.chatInput.disabled = waiting;
+                
+                if (waiting) {
+                    this.typingIndicator.classList.add('show');
+                    this.scrollToBottom();
+                } else {
+                    this.typingIndicator.classList.remove('show');
+                    this.chatInput.focus();
+                }
+            }
+            
+            scrollToBottom() {
+                setTimeout(() => {
+                    this.chatMessages.scrollTop = this.chatMessages.scrollHeight;
+                }, 100);
+            }
+        }
+        
+        // Initialize the chat app when DOM is loaded
+        document.addEventListener('DOMContentLoaded', () => {
+            new ChatApp();
+        });
+    </script>
+</body>
+</html>

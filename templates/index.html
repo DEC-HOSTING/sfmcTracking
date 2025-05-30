@@ -2,9 +2,16 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Email Campaign Action Tracker</title>
-    <link rel="stylesheet" href="styles.css">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">    <title>Email Campaign Action Tracker</title>
+    
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- Modern CSS Framework -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/modern-framework.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/components.css') }}">
 </head>
 <body>
     <!-- Login Screen -->
@@ -532,8 +539,7 @@ Final Review:
                 </div>
             </div>
         </div>
-    </div>
-
-    <script src="script.js"></script>
+    </div>    <!-- Modern JavaScript -->
+    <script src="{{ url_for('static', filename='js/modern-ui.js') }}"></script>
 </body>
 </html>

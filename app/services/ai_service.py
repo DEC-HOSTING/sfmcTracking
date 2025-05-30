@@ -53,9 +53,12 @@ class AIService:
                 }
             
             logger.info(f"Making chat completion request with {len(messages)} messages")
+              # Add timeout handling for Kluster AI
+            response = None
+            assistant_message = None
             
-            # Add timeout handling for Kluster AI
             try:
+                logger.info(f"Sending request to Kluster AI with model: {KLUSTER_MODEL}")
                 response = kluster_client.chat.completions.create(
                     model=KLUSTER_MODEL,
                     messages=messages,
@@ -66,13 +69,24 @@ class AIService:
                 )
                 
                 assistant_message = response.choices[0].message.content
+                logger.info("Successfully received response from Kluster AI")
                 
             except Exception as api_error:
                 logger.warning(f"Kluster AI API timeout/error: {str(api_error)}")
-                # Fallback to a helpful response
+                logger.warning(f"Error type: {type(api_error).__name__}")
+                
+                # Fallback to a helpful response based on the user's message
                 user_message = messages[-1].get('content', '') if messages else ''
-                assistant_message = f"I'm having trouble connecting to my AI service right now, but I can help! Based on your message: '{user_message}', here are some suggestions:\n\n• If you need to create tasks, try using the 'Add Task' button\n• For organizing your work, consider creating categories first\n• I'll be back online soon to provide more personalized assistance!\n\nIs there anything specific you'd like to work on?"
-                response = None  # Set response to None for fallback handling
+                
+                # Create a more contextual fallback message
+                if 'task' in user_message.lower():
+                    assistant_message = f"I'm having trouble connecting to my AI service right now, but I can still help you with task management! You can:\n\n• Use the 'Add Task' button to create new tasks\n• Organize tasks into categories using the sidebar\n• Mark tasks as complete by clicking the checkbox\n\nYour request was: '{user_message}'\n\nI'll be back online soon to provide more AI-powered assistance!"
+                elif 'category' in user_message.lower() or 'organize' in user_message.lower():
+                    assistant_message = f"I'm experiencing connectivity issues, but you can still organize your work! Try:\n\n• Creating new categories in the sidebar\n• Moving tasks between categories\n• Using colors to organize your workflow\n\nYour request: '{user_message}'\n\nI'll be back to help with AI-powered organization soon!"
+                else:
+                    assistant_message = f"I apologize, but I'm having trouble connecting to my AI service right now. However, you can still use all the TaskMaster features:\n\n• Create and manage tasks\n• Organize with categories\n• Track your progress\n\nYour message: '{user_message}'\n\nI'll be back online shortly to provide full AI assistance!"
+                
+                response = None  # Ensure response is None for fallback handling
             
             logger.info("Chat completion successful")
             return {

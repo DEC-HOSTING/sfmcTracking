@@ -5,6 +5,7 @@ A modern, avant-garde interface combining secure authentication, task management
 
 import os
 import secrets
+import logging
 from flask import Flask
 from flask_cors import CORS
 from flask_login import LoginManager
@@ -19,6 +20,26 @@ load_dotenv()
 db = SQLAlchemy()
 migrate = Migrate()
 login_manager = LoginManager()
+
+# Set up logging
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+)
+logger = logging.getLogger(__name__)
+
+def validate_database_connection(app):
+    """Validate database connection and schema"""
+    try:
+        with app.app_context():
+            # Test basic database connection
+            from sqlalchemy import text
+            db.session.execute(text('SELECT 1'))
+            logger.info("✅ Database connection validated")
+            return True
+    except Exception as e:
+        logger.error(f"❌ Database connection failed: {str(e)}")
+        return False
 
 def create_app(config_name=None):
     """Application factory pattern"""
@@ -56,5 +77,8 @@ def create_app(config_name=None):
     app.register_blueprint(auth_bp, url_prefix='/auth')
     app.register_blueprint(api_bp, url_prefix='/api')
     app.register_blueprint(main_bp)
+    
+    # Validate database connection at startup
+    validate_database_connection(app)
     
     return app
