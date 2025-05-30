@@ -82,12 +82,12 @@ Malaurie Status: PENDING - Ready for deployment
 
 ## Login Credentials
 
-- **Email**: camelia.ounesli@loreal.com
-- **Password**: QueenCRM
+- **Email**: [See .env.example for credentials]
+- **Password**: [See .env.example for credentials]
 
 ## Email Notifications
 
-When action items are checked, batch email notifications are sent to: thomas.nicoli@loreal.com
+When action items are checked, batch email notifications are sent to: [See .env.example for email configuration]
 
 ## Campaign Sections
 

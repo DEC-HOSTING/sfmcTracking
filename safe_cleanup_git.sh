@@ -30,8 +30,13 @@ def clean_file(filepath):
     patterns = [
         (r'admin@taskmaster\.com', 'ADMIN_EMAIL_FROM_ENV'),
         (r'admin123', 'ADMIN_PASSWORD_FROM_ENV'),
+        (r'camelia\.ounesli@loreal\.com', 'USER_EMAIL_FROM_ENV'),
+        (r'QueenCRM', 'USER_PASSWORD_FROM_ENV'),
+        (r'thomas\.nicoli@loreal\.com', 'NOTIFICATION_EMAIL_FROM_ENV'),
         (r'Email:\s*admin@taskmaster\.com', 'Email: [See .env.example]'),
         (r'Password:\s*admin123', 'Password: [See .env.example]'),
+        (r'Email:\s*camelia\.ounesli@loreal\.com', 'Email: [See .env.example]'),
+        (r'Password:\s*QueenCRM', 'Password: [See .env.example]'),
     ]
     
     for pattern, replacement in patterns:
@@ -60,7 +65,10 @@ else
     # Advanced cleanup with git-filter-repo
     git filter-repo --force \
         --replace-text <(echo 'admin@taskmaster.com==>ADMIN_EMAIL_FROM_ENV') \
-        --replace-text <(echo 'admin123==>ADMIN_PASSWORD_FROM_ENV')
+        --replace-text <(echo 'admin123==>ADMIN_PASSWORD_FROM_ENV') \
+        --replace-text <(echo 'camelia.ounesli@loreal.com==>USER_EMAIL_FROM_ENV') \
+        --replace-text <(echo 'QueenCRM==>USER_PASSWORD_FROM_ENV') \
+        --replace-text <(echo 'thomas.nicoli@loreal.com==>NOTIFICATION_EMAIL_FROM_ENV')
 fi
 
 echo ""

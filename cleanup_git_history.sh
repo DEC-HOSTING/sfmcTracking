@@ -18,7 +18,7 @@ git branch backup-before-cleanup
 # Use git filter-branch to remove credentials from history
 echo "🧹 Removing credentials from git history..."
 
-# Remove admin@taskmaster.com from all commits
+# Remove sensitive credentials from all commits
 git filter-branch --force --index-filter '
     git rm --cached --ignore-unmatch *.md || true
     git rm --cached --ignore-unmatch *.py || true
@@ -37,5 +37,8 @@ echo "   3. Delete backup branch: git branch -D backup-before-cleanup"
 echo ""
 echo "🛡️ Security Note:"
 echo "   - Previous commits with credentials have been removed"
+echo "   - admin@taskmaster.com / admin123 removed"
+echo "   - camelia.ounesli@loreal.com / QueenCRM removed"
+echo "   - thomas.nicoli@loreal.com removed"
 echo "   - Use .env.example as template for local credentials"
 echo "   - Never commit .env files to version control"

@@ -11,6 +11,9 @@
 ### 1. **Immediate Cleanup**
 - ✅ Removed hardcoded `admin@taskmaster.com` from all documentation
 - ✅ Removed hardcoded password `admin123` from all files
+- ✅ Removed hardcoded `camelia.ounesli@loreal.com` from all files
+- ✅ Removed hardcoded password `QueenCRM` from all files
+- ✅ Removed hardcoded `thomas.nicoli@loreal.com` from all files
 - ✅ Updated all README files to reference `.env.example`
 - ✅ Modified Python scripts to use environment variables
 
@@ -41,8 +44,16 @@ create_admin.py               -> Added dotenv support
 
 ### **Environment Variables**
 ```bash
+# Admin Configuration
 ADMIN_EMAIL=your-admin@email.com
 ADMIN_PASSWORD=your-secure-password
+
+# User Authentication
+VALID_EMAIL=your-email@example.com
+VALID_PASSWORD=your-secure-password
+
+# Email Notifications
+RECIPIENT_EMAIL=notifications@example.com
 ```
 
 ### **Previous Commits**
