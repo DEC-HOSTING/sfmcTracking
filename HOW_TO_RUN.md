@@ -85,8 +85,8 @@ python comprehensive_test.py
 
 ## 🎯 Default Test Credentials
 
-**Email:** admin@taskmaster.com  
-**Password:** admin123
+**Email:** See .env.example file  
+**Password:** See .env.example file
 
 *Note: You can register new users or use these default credentials for testing.*
 

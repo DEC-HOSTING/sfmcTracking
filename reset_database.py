@@ -1,6 +1,10 @@
 import os
 import sys
 import shutil
+from dotenv import load_dotenv
+
+# Load environment variables
+load_dotenv()
 
 def reset_database():
     try:
@@ -27,11 +31,12 @@ def reset_database():
             print("🔨 Creating database tables...")
             db.create_all()
             print("✓ Database tables created")
-            
-            # Create admin user
+              # Create admin user
             print("👤 Creating admin user...")
-            admin_user = User(email='admin@taskmaster.com')
-            admin_user.set_password('admin123')
+            admin_email = os.getenv('ADMIN_EMAIL', 'admin@taskmaster.com')
+            admin_password = os.getenv('ADMIN_PASSWORD', 'admin123')
+            admin_user = User(email=admin_email)
+            admin_user.set_password(admin_password)
             db.session.add(admin_user)
             db.session.flush()  # Get the ID
             print(f"✓ Admin user created with ID: {admin_user.id}")
@@ -52,20 +57,18 @@ def reset_database():
             # Commit all changes
             db.session.commit()
             print("✓ All data committed to database")
-            
-            # Verify user creation
-            user_check = User.query.filter_by(email='admin@taskmaster.com').first()
+              # Verify user creation
+            user_check = User.query.filter_by(email=admin_email).first()
             if user_check:
                 print(f"✅ User verification successful: {user_check.email}")
                 print(f"✅ Password hash exists: {bool(user_check.password_hash)}")
             else:
                 print("❌ User verification failed!")
                 return False
-            
-            print("\n🎉 Database reset complete!")
+              print("\n🎉 Database reset complete!")
             print("📋 Login credentials:")
-            print("   Email: admin@taskmaster.com")
-            print("   Password: admin123")
+            print(f"   Email: {admin_email}")
+            print("   Password: [Check .env file]")
             return True
             
     except Exception as e:

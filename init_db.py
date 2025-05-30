@@ -27,15 +27,16 @@ def init_database():
         
         with app.app_context():
             print("Creating database tables...")
-            db.create_all()
-              # Check if admin user exists
-            admin_user = User.query.filter_by(email='admin@taskmaster.com').first()
+            db.create_all()              # Check if admin user exists
+            admin_email = os.getenv('ADMIN_EMAIL', 'admin@taskmaster.com')
+            admin_password = os.getenv('ADMIN_PASSWORD', 'admin123')
+            admin_user = User.query.filter_by(email=admin_email).first()
             if not admin_user:
                 print("Creating admin user...")
                 admin_user = User(
-                    email='admin@taskmaster.com'
+                    email=admin_email
                 )
-                admin_user.set_password('admin123')
+                admin_user.set_password(admin_password)
                 db.session.add(admin_user)
                 
                 # Create sample categories
@@ -94,11 +95,10 @@ def init_database():
                 print("Sample data created successfully!")
             else:
                 print("Admin user already exists, skipping sample data creation")
-            
-            print("Database initialization complete!")
+              print("Database initialization complete!")
             print("\nLogin credentials:")
-            print("Email: admin@taskmaster.com")
-            print("Password: admin123")
+            print(f"Email: {admin_email}")
+            print("Password: [Check .env file]")
             
     except Exception as e:
         print(f"Database initialization failed: {e}")

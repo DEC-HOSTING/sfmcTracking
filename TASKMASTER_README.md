@@ -84,7 +84,7 @@ TaskMaster is a modern Flask-based task management application with integrated A
 
 7. **Access the application**
    - Open browser to `http://127.0.0.1:5000`
-   - Login with: `admin@taskmaster.com` / `admin123`
+   - Login with credentials from `.env.example` file
 
 ## 🔧 Configuration
 
